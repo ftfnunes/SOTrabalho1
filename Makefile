@@ -1,6 +1,6 @@
 IDIR =./include
-CC=gcc
-CFLAGS=-ansi -Wall -g -I$(IDIR)
+CC=cc
+CFLAGS=-D_GNU_SOURCE -ansi -Wall -g -I$(IDIR)
 
 SRC_DIR = ./src
 
@@ -16,7 +16,7 @@ escalonador: $(SRC_DIR)/escalonador.c $(IDIR)/escalonador.h
 	$(CC) -o $@ $(SRC_DIR)/escalonador.c $(CFLAGS)
 
 gerente_de_execucao: $(SRC_DIR)/gerente_de_execucao.c $(IDIR)/gerente_de_execucao.h
-	$(CC) -c -o $@ src/gerente_de_execucao.c $(CFLAGS)
+	$(CC) -o $@ src/gerente_de_execucao.c $(CFLAGS)
 
 executa_postergado: $(SRC_DIR)/executa_postergado.c $(IDIR)/executa_postergado.h	
 	$(CC) -o $@ $(SRC_DIR)/executa_postergado.c $(CFLAGS)
