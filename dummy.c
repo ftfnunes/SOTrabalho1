@@ -8,6 +8,13 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+#define TIPO_MSG_PIDS 1
+
+struct msg_pids{
+	long type;
+	int pid_direita;
+	int pid_cima;
+};
 
 int instacia_gerente_de_execucao(int num_do_gerente){
 	int pid;
@@ -23,11 +30,15 @@ int instacia_gerente_de_execucao(int num_do_gerente){
 
 
 int main(){
-	int escToNode, shmid;
+	int escToNode, nodesToEsc, shmid;
 	int pid;
 	int estado;
 	uint8_t *matriz;
+	struct msg_pids pids_zero;
 
+	pids_zero.type = TIPO_MSG_PIDS;
+	pids_zero.pid_direita = 111;
+	pids_zero.pid_cima = 112;
 
 	/*Comunicacao com o node 0*/
 	escToNode = msgget(0x34, IPC_CREAT | 0666);
@@ -41,9 +52,8 @@ int main(){
 
 	pid = instacia_gerente_de_execucao(0);
 
-	sleep(5);
+	msgsnd(escToNode, &pids_zero, sizeof(pids_zero), 0);
 
-	printf("%d\n", matriz[0]);
 
 	wait(&estado);
 

@@ -8,7 +8,13 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
+#define TIPO_MSG_PIDS 1
 
+struct msg_pids{
+	long type;
+	int pid_direita;
+	int pid_cima;
+};
 
 int pid_vizinhos[4];
 
@@ -25,6 +31,7 @@ int instacia_gerente_de_execucao(int num_do_gerente){
 }
 
 int main(int argc, char** argv){
+	int pid = 0;
 	int pid_filho = 0;
 	int node_num = 0;
 	int shmid = 0;
@@ -32,6 +39,7 @@ int main(int argc, char** argv){
 	int mensagens_para_escalonador = 0;
 	int estado;
 	uint8_t *matriz_ocupacao;
+	struct msg_pids pids_vizinhos;
 
 	if(argc != 2){
 		printf("Gerente de execucao iniciado incorretamente\n");
@@ -52,8 +60,15 @@ int main(int argc, char** argv){
 
 	matriz_ocupacao = (uint8_t *)shmat(shmid, 0, 0);
 
-	matriz_ocupacao[0] = 1;
+	/*node zero recebe, do escalonador */
+	if(node_num == 0){
+		if(msgrcv(mensagens_do_escalonador, &pids_vizinhos, sizeof(pids_vizinhos), TIPO_MSG_PIDS, 0) < 0){
+			printf("Erro ao receber mensagem\n");
+			exit(1);
+		}
+	}
 
+	printf("%d %d\n", pids_vizinhos.pid_direita, pids_vizinhos.pid_cima);
 
 	exit(0);
 }
