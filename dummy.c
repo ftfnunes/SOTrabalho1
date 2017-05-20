@@ -41,10 +41,10 @@ int main(){
 	pids_zero.pid_cima = 112;
 
 	/*Comunicacao com o node 0*/
-	escToNode = msgget(0x34, IPC_CREAT | 0666);
+	escToNode = msgget(0x334, IPC_CREAT | 0666);
 
 	/*Quando um processo terminar ele envia mensagem pra ca*/
-	nodesToEsc = msgget(0x35, IPC_CREAT | 0666);
+	nodesToEsc = msgget(0x335, IPC_CREAT | 0666);
 
 	shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666);
 	matriz = shmat(shmid, 0, 0);
