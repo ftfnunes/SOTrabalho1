@@ -76,6 +76,8 @@ int main(){
 	int pids[16];
 	struct mensagem_exe msg;
 	struct resultado rst;
+	shutdown_msg estats;
+	int fila_sh;
 
 
 	instancia_filas();
@@ -83,6 +85,8 @@ int main(){
 	escToNode = msgget(FILA_DO_ESCALONADOR_K, IPC_CREAT | 0666);
 
 	nodesToEsc = msgget(FILA_PARA_ESCALONADOR_K, IPC_CREAT | 0666);
+
+	fila_sh = msgget(0x120700, IPC_CREAT | 0666);
 
 	shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666);
 	matriz = shmat(shmid, 0, 0);
@@ -109,6 +113,15 @@ int main(){
 	}
 
 	printf("Mensagem Recebida %d %s %s %ld\n", rst.info.node, rst.info.inicio, rst.info.fim, rst.info.turnaround);
+
+
+	kill(pids[15], SIGUSR1);
+
+	if(msgrcv(fila_sh, &estats, sizeof(estats), 0, 0) < 0){
+		printf("Erro %d\n", errno);
+	}
+
+	printf("%s %s %s %s %d\n", estats.info.vetor[0].programa, estats.info.vetor[0].tempo_fim, estats.info.vetor[0].tempo_inicio, estats.info.vetor[0].tempo_submissao, estats.info.vetor[0].pid );
 
 	sleep(10);
 

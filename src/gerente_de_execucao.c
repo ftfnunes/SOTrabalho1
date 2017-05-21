@@ -1,12 +1,15 @@
 #include "gerente_de_execucao.h"
 #include "utils.h"
+#include <errno.h>
+
+external int errno;
 
 int node_num = 0;
 int pid_prog = 0;
 int pid_gerente = 0;
 uint8_t *matriz_ocupacao;
 struct mensagem_exe msg;
-shutdown_vector_t estatisticas;
+shutdown_msg estatisticas;
 
 /*As chaves das filas de msg sao criadas a partir do algoritmo (key = 10*no_origem + no_destino)*/
 int instancia_gerente_de_execucao(int num_do_gerente){
@@ -61,17 +64,21 @@ struct resultado executa_programa(char *programa){
 
 	rst.info.turnaround = (long)(fim-inicio);
 	rst.info.node = node_num;
-	strcpy(rst.info.inicio, ctime(&inicio));
-	strcpy(rst.info.fim, ctime(&fim));
 	rst.mtype = 1;
 
-	strcpy(estatisticas.vetor[estatisticas.total].tempo_inicio, ctime(&inicio));
-	strcpy(estatisticas.vetor[estatisticas.total].tempo_fim, ctime(&fim));
-	strcpy(estatisticas.vetor[estatisticas.total].tempo_submissao, ctime(&(msg.info.tempo_submissao)));
-	strcpy(estatisticas.vetor[estatisticas.total].programa, programa);
-	estatisticas.vetor[estatisticas.total].pid = pid_prog;
+	strcpy(rst.info.inicio, ctime(&inicio));
+	strcpy(rst.info.fim, ctime(&fim));
+	rst.info.inicio[strlen(rst.info.inicio)-1] = '\0';
+	rst.info.fim[strlen(rst.info.fim)-1] = '\0';
 
-	estatisticas.total++;
+	strcpy(estatisticas.info.vetor[estatisticas.info.total].tempo_inicio, rst.info.inicio);
+	strcpy(estatisticas.info.vetor[estatisticas.info.total].tempo_fim, rst.info.fim);
+	strcpy(estatisticas.info.vetor[estatisticas.info.total].tempo_submissao, ctime(&(msg.info.tempo_submissao)));
+	estatisticas.info.vetor[estatisticas.info.total].tempo_submissao[strlen(estatisticas.info.vetor[estatisticas.info.total].tempo_submissao) - 1] = '\0';
+	strcpy(estatisticas.info.vetor[estatisticas.info.total].programa, programa);
+	estatisticas.info.vetor[estatisticas.info.total].pid = pid_prog;
+
+	estatisticas.info.total++;
 
 	return rst;
 }
@@ -92,7 +99,7 @@ void envia_mensagem(struct mensagem_exe msg, int fila_cima, int fila_direita){
 	}
 }
 
-void notifica_escalonador(fila_de_mensagem, rst){
+void notifica_escalonador(int fila_de_mensagem, struct resultado rst){
 	if(msgsnd(fila_de_mensagem, &rst, sizeof(rst), 0) < 0){
 		printf("Erro no roteamento do node %d\n", node_num);
 		exit(1);
@@ -112,7 +119,7 @@ void trata_shutdown(){
 	}
 
 	if(msgsnd(fila_shutdown, &estatisticas, sizeof(estatisticas), 0) < 0){
-		printf("Erro ao enviar estatisticas do processo %d\n", node_num);
+		printf("Erro ao enviar estatisticas do processo %d com erro %d\n", node_num, errno);
 		exit(1);
 	}
 
@@ -137,7 +144,7 @@ int main(int argc, char** argv){
 
 	node_num = atoi(argv[1]);
 	pid_gerente = getpid();
-	estatisticas.total = 0;
+	estatisticas.info.total = 0;
 
 
 	if((shmid = shmget(0x33, 16*sizeof(uint8_t), 0666)) < 0){

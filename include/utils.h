@@ -4,11 +4,11 @@
 
 #define FILA_DO_ESCALONADOR_K 0X336
 #define FILA_PARA_ESCALONADOR_K 0X337
-#define TAM_PIDS 17
+#define TAM_PIDS 16
 #define PID_ESCALONADOR 0
 #define TAM_PROGRAMA 200
 #define TAM_TEMPO 50
-#define TAM_SHUTDOWN_V 100
+#define TAM_SHUTDOWN_V 16
 #define SHUTDOWN_VECTOR_MTYPE 10
 
 /*template para o envio de mensagens entre nos e escalonador*/
@@ -44,6 +44,11 @@ typedef struct {
 	shutdown_data_t vetor[TAM_SHUTDOWN_V];
 	uint8_t total;
 } shutdown_vector_t;
+
+typedef struct {
+	long mtype;
+	shutdown_vector_t info;
+} shutdown_msg;
 
 typedef struct {
 	uint32_t pids_v[TAM_PIDS];
