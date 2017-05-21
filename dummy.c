@@ -7,6 +7,8 @@
 #include <sys/msg.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include <time.h>
+#include <string.h>
 #include "utils.h"
 
 #define TIPO_MSG_PIDS 1
@@ -29,10 +31,10 @@ void instancia_filas(){
 
 	for(i = 0; i<=11; i++){
 		if(msgget((i*10)+i+4, IPC_CREAT | 0666) < 0){
-			printf("Erro na criacao da fila %d\n", (i*10)+i+1);
+			printf("Erro na criacao da fila %d\n", (i*10)+i+4);
 			exit(1);
 		}
-		printf("Fila %d criada\n", (i*10)+i+1);
+		printf("Fila %d criada\n", (i*10)+i+4);
 
 		if(i < 3 && i/4 == 0){
 			if(msgget((i*10)+i+1, IPC_CREAT | 0666) < 0){
@@ -70,6 +72,9 @@ int main(){
 	}
 
 	msg.node_dest = 0;
+	msg.type = 0;
+	time(&(msg.tempo_submissao));
+	strcpy(msg.programa, "./teste");
 
 	msgsnd(escToNode, &msg, sizeof(msg), 0);
 

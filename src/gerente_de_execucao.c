@@ -161,12 +161,14 @@ int main(int argc, char** argv){
 				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 				exit(1);
 			}
+			printf("%d conseguiu a fila de recebimento %d\n", node_num, FILA_DO_ESCALONADOR_K);
 		}			
 		else{
 			if((fila_recebimento = msgget((node_num-1)*10 + node_num, 0666)) < 0){
 				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 				exit(1);
 			}
+			printf("%d conseguiu a fila de recebimento %d\n", node_num, (node_num-1)*10 + node_num);
 		}
 	}			
 	else{
@@ -174,6 +176,7 @@ int main(int argc, char** argv){
 			printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 			exit(1);
 		}
+		printf("%d conseguiu a fila de recebimento %d\n", node_num, (node_num-4)*10+node_num);
 	}
 
 	if(node_num/4 < 3){
