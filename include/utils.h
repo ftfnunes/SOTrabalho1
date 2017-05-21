@@ -14,3 +14,11 @@ struct resultado{
 	char fim[50];
 	long turnaround;
 };
+
+typedef struct {
+	uint32_t pid;
+	char programa[TAM_PROGRAMA];
+	char tempo_inicio[TAM_TEMPO];
+	char tempo_fim[TAM_TEMPO];
+	char tempo_submissao[TAM_TEMPO];
+} shutdown_data_t;

@@ -31,17 +31,21 @@ int instacia_gerente_de_execucao(int num_do_gerente){
 }
 
 int instancia_filas(){
-	for(i = 0; i<11; i++){
+	int i;
+
+	for(i = 0; i<=11; i++){
 		if(msgget((i*10)+i+4, IPC_CREAT | 0666) < 0){
 			printf("Erro na criacao da fila %d\n", (i*10)+i+1);
 			exit(1);
 		}
+		printf("Fila %d criada\n", (i*10)+i+1);
 
-		if(i/4 == 0){
+		if(i < 3 && i/4 == 0){
 			if(msgget((i*10)+i+1, IPC_CREAT | 0666) < 0){
 				printf("Erro na criacao da fila %d\n", (i*10)+i+1);
 				exit(1);
 			}
+			printf("Fila %d criada\n", (i*10)+i+1);
 		}
 	}
 }
@@ -49,14 +53,16 @@ int instancia_filas(){
 
 int main(){
 	int escToNode, nodesToEsc, shmid;
-	int pid;
+	int pid, i;
 	int estado;
 	uint8_t *matriz;
-	struct msg_pids pids_zero;
+	
 
-	pids_zero.type = TIPO_MSG_PIDS;
-	pids_zero.pid_direita = 111;
-	pids_zero.pid_cima = 112;
+	instancia_filas();
+
+	for(i=0; i<16; i++){
+		instacia_gerente_de_execucao(i);
+	}
 
 	/*Comunicacao com o node 0*/
 	escToNode = msgget(0x334, IPC_CREAT | 0666);
@@ -66,9 +72,6 @@ int main(){
 
 	shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666);
 	matriz = shmat(shmid, 0, 0);
-
-
-	pid = instacia_gerente_de_execucao(0);
 
 	msgsnd(escToNode, &pids_zero, sizeof(pids_zero), 0);
 
