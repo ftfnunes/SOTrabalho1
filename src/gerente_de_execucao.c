@@ -2,6 +2,7 @@
 #include "utils.h"
 
 int node_num = 0;
+int pid_prog = 0;
 
 /*As chaves das filas de msg sao criadas a partir do algoritmo (key = 10*no_origem + no_destino)*/
 int instacia_gerente_de_execucao(int num_do_gerente){
@@ -28,9 +29,11 @@ struct mensagem receber_mensagem(int fila_de_mensagem){
 }
 
 struct resultado executa_programa(char *programa){
-	int pid, estado;
+	int estado;
+	time_t inicio, fim;
 	char *nome_programa;
 	struct resultado rst;
+
 	if((nome_programa = strrchr(programa, '/')) == NULL){
 		printf("Erro no parse do programa no node %d\n", node_num);
 		exit(1);
@@ -38,22 +41,28 @@ struct resultado executa_programa(char *programa){
 	
 	nome_programa++;
 
+	time(&inicio);
 
-	if((pid = fork()) == 0){
+	if((pid_prog = fork()) == 0){
 		execl(programa, nome_programa, NULL);
 		printf("Erro ao executar o programa\n");
 	}
 
 	wait(&estado);
+	
+	time(&fim);
 
+	rst.turnaround = (long)(fim-inicio);
 
+	strcpy(rst.inicio, ctime(&inicio));
+	strcpy(rst.fim, ctime(&fim));
 
 	return rst;
 }
 
 void envia_mensagem(struct mensagem msg, int fila_cima, int fila_direita){
 
-	if((node_num%4) == node_num){
+	if(node_num > 3 || (msg.node_dest%4) == node_num){
 		if(msgsnd(fila_cima, &msg, sizeof(msg), 0) < 0){
 			printf("Erro no roteamento do node %d\n", node_num);
 			exit(1);
@@ -76,14 +85,11 @@ void notifica_escalonador(fila_de_mensagem, rst){
 
 
 int main(int argc, char** argv){
-	int pid = 0;
-	int pid_filho = 0;
 	int shmid = 0;
 	int fila_para_escalonador = -1;
 	int fila_direita = -1;
 	int fila_cima = -1;
 	int fila_recebimento = -1;
-	int estado;
 	struct resultado rst;
 	struct mensagem msg;
 	uint8_t *matriz_ocupacao;

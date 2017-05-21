@@ -10,7 +10,7 @@ struct mensagem {
 
 struct resultado{
 	long type;
-	char tempo_inicio[20];
-	char tempo_fim[20];
-	int turnaround;
+	char inicio[50];
+	char fim[50];
+	long turnaround;
 };

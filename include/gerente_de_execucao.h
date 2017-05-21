@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <time.h>
 
 
 #define FILA_DO_ESCALONADOR_K 0X334
