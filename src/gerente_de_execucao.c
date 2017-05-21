@@ -9,7 +9,7 @@ struct mensagem_exe msg;
 shutdown_vector_t estatisticas;
 
 /*As chaves das filas de msg sao criadas a partir do algoritmo (key = 10*no_origem + no_destino)*/
-int instacia_gerente_de_execucao(int num_do_gerente){
+int instancia_gerente_de_execucao(int num_do_gerente){
 	int pid;
 	char num_gerente_string[3];
 
@@ -28,6 +28,8 @@ struct mensagem_exe receber_mensagem(int fila_de_mensagem){
 		printf("Erro no recebimento de mensagem no node %d\n", node_num);
 		exit(1);
 	}
+
+	printf("%d recebeu a msg! node dest: %d\n", node_num, msg.info.node_dest);
 
 	return msg;
 }
@@ -189,6 +191,8 @@ int main(int argc, char** argv){
 			exit(1);
 		}
 	}
+
+	printf("Todos os recursos setados! (%d)\n", node_num);
 
 	/*A partir que o processo recebe a requisao de executar ele para de rotear*/
 	while(TRUE){

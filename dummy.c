@@ -16,7 +16,7 @@
 
 extern int errno;
 
-int instacia_gerente_de_execucao(int num_do_gerente){
+int instancia_gerente_de_execucao(int num_do_gerente){
 	int pid;
 	char num_gerente_string[3];
 
@@ -36,14 +36,12 @@ void instancia_filas(){
 			printf("Erro na criacao da fila %d\n", (i*10)+i+4);
 			exit(1);
 		}
-		printf("Fila %d criada\n", (i*10)+i+4);
 
 		if(i < 3 && i/4 == 0){
 			if(msgget((i*10)+i+1, IPC_CREAT | 0666) < 0){
 				printf("Erro na criacao da fila %d\n", (i*10)+i+1);
 				exit(1);
 			}
-			printf("Fila %d criada\n", (i*10)+i+1);
 		}
 	}
 }
@@ -60,20 +58,18 @@ int main(){
 
 	instancia_filas();
 
-	/*Comunicacao com o node 0*/
-	escToNode = msgget(0x334, IPC_CREAT | 0666);
+	escToNode = msgget(FILA_DO_ESCALONADOR_K, IPC_CREAT | 0666);
 
-	/*Quando um processo terminar ele envia mensagem pra ca*/
-	nodesToEsc = msgget(0x335, IPC_CREAT | 0666);
+	nodesToEsc = msgget(FILA_PARA_ESCALONADOR_K, IPC_CREAT | 0666);
 
 	shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666);
 	matriz = shmat(shmid, 0, 0);
 
 	for(i=0; i<16; i++){
-		pids[i] = instacia_gerente_de_execucao(i);
+		pids[i] = instancia_gerente_de_execucao(i);
 	}
 
-	msg.info.node_dest = 0;
+	msg.info.node_dest = 15;
 	msg.mtype = 1;
 	time(&(msg.info.tempo_submissao));
 	strcpy(msg.info.programa, "./teste");
@@ -82,6 +78,8 @@ int main(){
 	if(msgsnd(escToNode, &msg, sizeof(msg), 0) < 0){
 		printf("Erro\n");
 	}
+
+	printf("mensagem enviada\n");
 
 	exit(0);
 }
