@@ -21,6 +21,14 @@ struct mensagem_exe {
 	} info;
 };
 
+struct mensagem_sol {
+	long mtype;
+	struct msg_sol {
+		int seg;
+		char programa[TAM_PROGRAMA];
+	} sol;
+};
+
 struct resultado{
 	long type;
 	struct result_info {

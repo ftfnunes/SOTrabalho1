@@ -11,19 +11,8 @@
 #include <sys/msg.h>
 #include <sys/shm.h>
 
-struct mensagemSol{
-	long type;
-	int seg;
-	char programa[200];
-};
-typedef struct mensagemSol MsgSol;
+#include "utils.h"
 
-struct mensagemExe{
-	long type;
-	int node_dest;
-	char programa[200];
-};
-typedef struct mensagemExe MsgExe;
 
 /*
 	Mecanismo para escalonar os processos a serem executados.
@@ -43,8 +32,8 @@ typedef struct mensagemExe MsgExe;
 
 int main(){
 	int filaSolicitacoes, filaExecucao, testeFila, estado, pid, *mtzGerentesExec, shmid;
-	MsgSol msgSolicitacao;
-	MsgExe msgExecucao[30];
+	struct mensagem_sol msg_sol;
+	time_t tempo;
 
 
 	// Criação da fila de mensagens que recebe as solicitações de execução vindas dos processos de solicitação de execução.
@@ -72,14 +61,19 @@ int main(){
 	}
 
 	while(1){
-		msgrcv(filaSolicitacoes, &msgSolicitacao, sizeof(msgSolicitacao), 0, 0);
+		msgrcv(filaSolicitacoes, &msg_sol, sizeof(msg_sol), 0, 0);
+
+		// Atribui à variável 'tempo' o tempo em que a mensagem foi recebida.
+		time(&tempo);
 
 		pid = fork();
 
 		if(pid == 0){
+			struct mensagem_exe msg_exe[16];
 			int i, sai = 0, conta_livres;
-			MsgExe msgs[16];
-			sleep(msgSolicitacao.seg);
+
+			// O processo irá realizar um sleep até que que delay desejado seja simulado.
+			sleep(msg_sol.sol.seg);
 
 			//Loop verifica se todos os gerenciadores de processo estão livres.
 			while(!sai){
@@ -92,15 +86,18 @@ int main(){
 					sai = 1;
 			}
 
-			for(i = 0; i < 16; ++i) {
-				msgs[i].type = getpid();
-				strcpy(msgs[i].programa, msgSolicitacao.programa);
-				msgs[i].node_dest = i;
-				//Falta criar o comando para enviar a mensagem.
+			for(i = 15; i >= 0; --i) {
+				// Atribui 1 ao tipo, pois esse tipo não é relevante nos processos gerenciadores de execução (não são verificados os tipos das mensagens)
+				msg_exe[i].type = 1;
+				strcpy(msg_exe[i].info.programa, msg_sol.sol.programa);
+				msg_exe[i].info.node_dest = i;
+				msg_exe[i].info.tempo_submissao = tempo;
+
+				msgsnd(filaExecucao, &(msg_exe[i]), sizeof(struct mensagem_exe), IPC_NOWAIT);
 			}
 
 			/*Não estamos verificando se a fila de mensagens está cheia. */
-			msgsnd(filaExecucao, &msgSolicitacao, sizeof(msgSolicitacao), IPC_NOWAIT);
+			
 
 			exit(0);
 		}
