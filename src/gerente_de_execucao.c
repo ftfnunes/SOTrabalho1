@@ -29,8 +29,8 @@ struct mensagem_exe receber_mensagem(int fila_de_mensagem){
 		exit(1);
 	}
 
-	printf("%d recebeu a msg! node dest: %d\n", node_num, msg.info.node_dest);
-
+	/*printf("%d recebeu a msg! node dest: %d\n", node_num, msg.info.node_dest);
+*/
 	return msg;
 }
 
@@ -60,9 +60,10 @@ struct resultado executa_programa(char *programa){
 	time(&fim);
 
 	rst.info.turnaround = (long)(fim-inicio);
-
+	rst.info.node = node_num;
 	strcpy(rst.info.inicio, ctime(&inicio));
 	strcpy(rst.info.fim, ctime(&fim));
+	rst.mtype = 1;
 
 	strcpy(estatisticas.vetor[estatisticas.total].tempo_inicio, ctime(&inicio));
 	strcpy(estatisticas.vetor[estatisticas.total].tempo_fim, ctime(&fim));
@@ -192,8 +193,8 @@ int main(int argc, char** argv){
 		}
 	}
 
-	printf("Todos os recursos setados! (%d)\n", node_num);
-
+	/*printf("Todos os recursos setados! (%d)\n", node_num);
+*/
 	/*A partir que o processo recebe a requisao de executar ele para de rotear*/
 	while(TRUE){
 		msg = receber_mensagem(fila_recebimento);
@@ -201,6 +202,7 @@ int main(int argc, char** argv){
 			if(matriz_ocupacao[node_num] == 0){
 				matriz_ocupacao[node_num] = 1;
 				rst = executa_programa(msg.info.programa);
+
 				matriz_ocupacao[node_num] = 0;
 				notifica_escalonador(fila_para_escalonador, rst);
 			}			
