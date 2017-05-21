@@ -10,9 +10,11 @@
 #include <time.h>
 #include <string.h>
 #include "utils.h"
+#include <errno.h>
 
 #define TIPO_MSG_PIDS 1
 
+extern int errno;
 
 int instacia_gerente_de_execucao(int num_do_gerente){
 	int pid;
@@ -71,12 +73,15 @@ int main(){
 		pids[i] = instacia_gerente_de_execucao(i);
 	}
 
-	msg.node_dest = 0;
-	msg.type = 0;
-	time(&(msg.tempo_submissao));
-	strcpy(msg.programa, "./teste");
+	msg.info.node_dest = 0;
+	msg.mtype = 1;
+	time(&(msg.info.tempo_submissao));
+	strcpy(msg.info.programa, "./teste");
 
-	msgsnd(escToNode, &msg, sizeof(msg), 0);
+
+	if(msgsnd(escToNode, &msg, sizeof(msg), 0) < 0){
+		printf("Erro\n");
+	}
 
 	exit(0);
 }

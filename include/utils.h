@@ -7,23 +7,28 @@
 #define TAM_PIDS 17
 #define PID_ESCALONADOR 0
 #define TAM_PROGRAMA 200
-#define TAM_TEMPO 20
+#define TAM_TEMPO 50
 #define TAM_SHUTDOWN_V 100
 #define SHUTDOWN_VECTOR_MTYPE 10
 
+/*template para o envio de mensagens entre nos e escalonador*/
 struct mensagem_exe {
-	long type;
-	int node_dest;
-	time_t tempo_submissao;
-	char programa[200];
+	long mtype;
+	struct msg_info {
+		int node_dest;
+		time_t tempo_submissao;
+		char programa[TAM_PROGRAMA];
+	} info;
 };
 
 struct resultado{
 	long type;
-	int node;
-	char inicio[50];
-	char fim[50];
-	long turnaround;
+	struct result_info {
+		int node;
+		char inicio[TAM_TEMPO];
+		char fim[TAM_TEMPO];
+		long turnaround;
+	} info;
 };
 
 typedef struct {

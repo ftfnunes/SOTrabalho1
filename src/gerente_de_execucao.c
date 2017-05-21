@@ -57,25 +57,25 @@ struct resultado executa_programa(char *programa){
 
 	time(&fim);
 
-	rst.turnaround = (long)(fim-inicio);
+	rst.info.turnaround = (long)(fim-inicio);
 
-	strcpy(rst.inicio, ctime(&inicio));
-	strcpy(rst.fim, ctime(&fim));
+	strcpy(rst.info.inicio, ctime(&inicio));
+	strcpy(rst.info.fim, ctime(&fim));
 
 	strcpy(estatisticas.vetor[estatisticas.total].tempo_inicio, ctime(&inicio));
 	strcpy(estatisticas.vetor[estatisticas.total].tempo_fim, ctime(&fim));
+	strcpy(estatisticas.vetor[estatisticas.total].tempo_submissao, ctime(&(msg.info.tempo_submissao)));
 	strcpy(estatisticas.vetor[estatisticas.total].programa, programa);
 	estatisticas.vetor[estatisticas.total].pid = pid_prog;
 
 	estatisticas.total++;
-
 
 	return rst;
 }
 
 void envia_mensagem(struct mensagem_exe msg, int fila_cima, int fila_direita){
 
-	if(node_num > 3 || (msg.node_dest%4) == node_num){
+	if(node_num > 3 || (msg.info.node_dest%4) == node_num){
 		if(msgsnd(fila_cima, &msg, sizeof(msg), 0) < 0){
 			printf("Erro no roteamento do node %d\n", node_num);
 			exit(1);
@@ -100,7 +100,7 @@ void trata_shutdown(){
 	int fila_shutdown = -1;
 	if(matriz_ocupacao[node_num] == 1){
 		kill(pid_prog, SIGKILL);
-		printf("O programa %s nao completou sua execucao no node %d\n", msg.programa, node_num);
+		printf("O programa %s nao completou sua execucao no node %d\n", msg.info.programa, node_num);
 	}
 	
 	if((fila_shutdown = msgget(0x120700, 0666)) < 0){
@@ -161,14 +161,12 @@ int main(int argc, char** argv){
 				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 				exit(1);
 			}
-			printf("%d conseguiu a fila de recebimento %d\n", node_num, FILA_DO_ESCALONADOR_K);
 		}			
 		else{
 			if((fila_recebimento = msgget((node_num-1)*10 + node_num, 0666)) < 0){
 				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 				exit(1);
 			}
-			printf("%d conseguiu a fila de recebimento %d\n", node_num, (node_num-1)*10 + node_num);
 		}
 	}			
 	else{
@@ -176,7 +174,6 @@ int main(int argc, char** argv){
 			printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 			exit(1);
 		}
-		printf("%d conseguiu a fila de recebimento %d\n", node_num, (node_num-4)*10+node_num);
 	}
 
 	if(node_num/4 < 3){
@@ -196,11 +193,10 @@ int main(int argc, char** argv){
 	/*A partir que o processo recebe a requisao de executar ele para de rotear*/
 	while(TRUE){
 		msg = receber_mensagem(fila_recebimento);
-
-		if(msg.node_dest == node_num){
+		if(msg.info.node_dest == node_num){
 			if(matriz_ocupacao[node_num] == 0){
 				matriz_ocupacao[node_num] = 1;
-				rst = executa_programa(msg.programa);
+				rst = executa_programa(msg.info.programa);
 				matriz_ocupacao[node_num] = 0;
 				notifica_escalonador(fila_para_escalonador, rst);
 			}			
