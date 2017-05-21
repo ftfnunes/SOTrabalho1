@@ -14,6 +14,7 @@ struct mensagem_exe {
 
 struct resultado{
 	long type;
+	int node;
 	char inicio[50];
 	char fim[50];
 	long turnaround;
