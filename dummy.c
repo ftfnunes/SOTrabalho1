@@ -56,12 +56,13 @@ int main(){
 	int pid, i;
 	int estado;
 	uint8_t *matriz;
-	
+	int pids[16];
+
 
 	instancia_filas();
 
 	for(i=0; i<16; i++){
-		instacia_gerente_de_execucao(i);
+		pids[i] = instacia_gerente_de_execucao(i);
 	}
 
 	/*Comunicacao com o node 0*/
@@ -72,6 +73,8 @@ int main(){
 
 	shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666);
 	matriz = shmat(shmid, 0, 0);
+
+
 
 	msgsnd(escToNode, &pids_zero, sizeof(pids_zero), 0);
 

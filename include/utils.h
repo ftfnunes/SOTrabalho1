@@ -2,9 +2,13 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-struct mensagem {
+#define FILA_DO_ESCALONADOR_K 0X334
+#define FILA_PARA_ESCALONADOR_K 0X335
+
+struct mensagem_exe {
 	long type;
 	int node_dest;
+	time_t tempo_submissao;
 	char programa[200];
 };
 
@@ -22,3 +26,9 @@ typedef struct {
 	char tempo_fim[TAM_TEMPO];
 	char tempo_submissao[TAM_TEMPO];
 } shutdown_data_t;
+
+typedef struct {
+	long mtype;
+	shutdown_data_t vetor[TAM_SHUTDOWN_V];
+	uint8_t total;
+} shutdown_vector_t;

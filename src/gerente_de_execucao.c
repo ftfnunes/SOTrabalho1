@@ -5,7 +5,7 @@ int node_num = 0;
 int pid_prog = 0;
 int pid_gerente = 0;
 uint8_t *matriz_ocupacao;
-struct mensagem msg;
+struct mensagem_exe msg;
 struct shutdown_vector_t estatisticas;
 
 /*As chaves das filas de msg sao criadas a partir do algoritmo (key = 10*no_origem + no_destino)*/
@@ -21,8 +21,8 @@ int instacia_gerente_de_execucao(int num_do_gerente){
 	return pid;
 }
 
-struct mensagem receber_mensagem(int fila_de_mensagem){
-	struct mensagem msg;
+struct mensagem_exe receber_mensagem(int fila_de_mensagem){
+	struct mensagem_exe msg;
 
 	if(msgrcv(fila_de_mensagem, &msg, sizeof(msg), 0, 0) < 0){
 		printf("Erro no recebimento de mensagem no node %d\n", node_num);
@@ -65,7 +65,7 @@ struct resultado executa_programa(char *programa){
 	strcpy(estatisticas.vetor[estatisticas.total].tempo_inicio, ctime(&inicio));
 	strcpy(estatisticas.vetor[estatisticas.total].tempo_fim, ctime(&fim));
 	strcpy(estatisticas.vetor[estatisticas.total].programa, programa);
-	estatisticas.vetor[estatisticas.total].pid = pid_gerente;
+	estatisticas.vetor[estatisticas.total].pid = pid_prog;
 
 	estatisticas.total++;
 
@@ -73,7 +73,7 @@ struct resultado executa_programa(char *programa){
 	return rst;
 }
 
-void envia_mensagem(struct mensagem msg, int fila_cima, int fila_direita){
+void envia_mensagem(struct mensagem_exe msg, int fila_cima, int fila_direita){
 
 	if(node_num > 3 || (msg.node_dest%4) == node_num){
 		if(msgsnd(fila_cima, &msg, sizeof(msg), 0) < 0){

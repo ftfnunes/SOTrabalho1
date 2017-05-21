@@ -18,10 +18,10 @@ escalonador: $(SRC_DIR)/escalonador.c $(IDIR)/escalonador.h $(IDIR)/utils.h
 gerente_de_execucao: $(SRC_DIR)/gerente_de_execucao.c $(IDIR)/gerente_de_execucao.h $(IDIR)/utils.h
 	$(CC) -o $@ src/gerente_de_execucao.c $(CFLAGS)
 
-executa_postergado: $(SRC_DIR)/executa_postergado.c $(IDIR)/executa_postergado.h	
+executa_postergado: $(SRC_DIR)/executa_postergado.c $(IDIR)/executa_postergado.h $(IDIR)/utils.h
 	$(CC) -o $@ $(SRC_DIR)/executa_postergado.c $(CFLAGS)
 
-shutdown: $(SRC_DIR)/shutdown.c $(IDIR)/shutdown.h
+shutdown: $(SRC_DIR)/shutdown.c $(IDIR)/shutdown.h $(IDIR)/utils.h
 	$(CC) -o $@ $(SRC_DIR)/shutdown.c $(CFLAGS)
 
 .PHONY: clean
