@@ -7,15 +7,9 @@
 #include <sys/msg.h>
 #include <unistd.h>
 #include <sys/wait.h>
+#include "utils.h"
 
 #define TIPO_MSG_PIDS 1
-
-
-struct mensagem {
-	long type;
-	int node_dest;
-	char programa[200];
-}
 
 
 int instacia_gerente_de_execucao(int num_do_gerente){
@@ -30,7 +24,7 @@ int instacia_gerente_de_execucao(int num_do_gerente){
 	return pid;
 }
 
-int instancia_filas(){
+void instancia_filas(){
 	int i;
 
 	for(i = 0; i<=11; i++){
@@ -57,13 +51,10 @@ int main(){
 	int estado;
 	uint8_t *matriz;
 	int pids[16];
+	struct mensagem_exe msg;
 
 
 	instancia_filas();
-
-	for(i=0; i<16; i++){
-		pids[i] = instacia_gerente_de_execucao(i);
-	}
 
 	/*Comunicacao com o node 0*/
 	escToNode = msgget(0x334, IPC_CREAT | 0666);
@@ -74,12 +65,13 @@ int main(){
 	shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666);
 	matriz = shmat(shmid, 0, 0);
 
+	for(i=0; i<16; i++){
+		pids[i] = instacia_gerente_de_execucao(i);
+	}
 
+	msg.node_dest = 0;
 
-	msgsnd(escToNode, &pids_zero, sizeof(pids_zero), 0);
-
-
-	wait(&estado);
+	msgsnd(escToNode, &msg, sizeof(msg), 0);
 
 	exit(0);
 }

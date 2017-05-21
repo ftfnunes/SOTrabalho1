@@ -10,7 +10,4 @@
 #include <string.h>
 #include <time.h>
 
-
-#define FILA_DO_ESCALONADOR_K 0X334
-#define FILA_PARA_ESCALONADOR_K 0X335
 #define TRUE 1

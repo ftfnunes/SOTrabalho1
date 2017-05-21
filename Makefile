@@ -24,6 +24,8 @@ executa_postergado: $(SRC_DIR)/executa_postergado.c $(IDIR)/executa_postergado.h
 shutdown: $(SRC_DIR)/shutdown.c $(IDIR)/shutdown.h $(IDIR)/utils.h
 	$(CC) -o $@ $(SRC_DIR)/shutdown.c $(CFLAGS)
 
+dummy: dummy.c $(IDIR)/utils.h
+	$(CC) -o $@ dummy.c $(CFLAGS)
 .PHONY: clean
 
 clean:

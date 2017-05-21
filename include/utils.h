@@ -4,6 +4,12 @@
 
 #define FILA_DO_ESCALONADOR_K 0X334
 #define FILA_PARA_ESCALONADOR_K 0X335
+#define TAM_PIDS 17
+#define PID_ESCALONADOR 0
+#define TAM_PROGRAMA 200
+#define TAM_TEMPO 20
+#define TAM_SHUTDOWN_V 100
+#define SHUTDOWN_VECTOR_MTYPE 10
 
 struct mensagem_exe {
 	long type;
@@ -33,3 +39,8 @@ typedef struct {
 	shutdown_data_t vetor[TAM_SHUTDOWN_V];
 	uint8_t total;
 } shutdown_vector_t;
+
+typedef struct {
+	uint32_t pids_v[TAM_PIDS];
+	uint8_t cont;
+} pids_t;

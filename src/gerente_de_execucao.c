@@ -6,7 +6,7 @@ int pid_prog = 0;
 int pid_gerente = 0;
 uint8_t *matriz_ocupacao;
 struct mensagem_exe msg;
-struct shutdown_vector_t estatisticas;
+shutdown_vector_t estatisticas;
 
 /*As chaves das filas de msg sao criadas a partir do algoritmo (key = 10*no_origem + no_destino)*/
 int instacia_gerente_de_execucao(int num_do_gerente){
@@ -108,7 +108,7 @@ void trata_shutdown(){
 		exit(1);
 	}
 
-	if(msgsnd(fila_shutdown, estatisticas, sizeof(estatisticas), 0) < 0){
+	if(msgsnd(fila_shutdown, &estatisticas, sizeof(estatisticas), 0) < 0){
 		printf("Erro ao enviar estatisticas do processo %d\n", node_num);
 		exit(1);
 	}
@@ -130,7 +130,7 @@ int main(int argc, char** argv){
 		exit(1);
 	}
 
-	signal(SIGUSR1, trata_shutdown)
+	signal(SIGUSR1, trata_shutdown);
 
 	node_num = atoi(argv[1]);
 	pid_gerente = getpid();
@@ -190,14 +190,17 @@ int main(int argc, char** argv){
 		}
 	}
 
+	/*A partir que o processo recebe a requisao de executar ele para de rotear*/
 	while(TRUE){
 		msg = receber_mensagem(fila_recebimento);
 
 		if(msg.node_dest == node_num){
-			matriz_ocupacao[node_num] = 1;
-			rst = executa_programa(msg.programa);
-			matriz_ocupacao[node_num] = 0;
-			notifica_escalonador(fila_para_escalonador, rst);
+			if(matriz_ocupacao[node_num] == 0){
+				matriz_ocupacao[node_num] = 1;
+				rst = executa_programa(msg.programa);
+				matriz_ocupacao[node_num] = 0;
+				notifica_escalonador(fila_para_escalonador, rst);
+			}			
 		}
 		else{
 			envia_mensagem(msg, fila_cima, fila_direita);
