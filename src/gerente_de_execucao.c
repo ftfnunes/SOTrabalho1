@@ -1,29 +1,7 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdint.h>
-#include <sys/types.h>
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/msg.h>
-#include <unistd.h>
-#include <sys/wait.h>
+#include "gerente_de_execucao.h"
+#include "utils.h"
 
-#define FILA_DO_ESCALONADOR_K 0X334
-#define FILA_PARA_ESCALONADOR_K 0X335
-#define TRUE 1
-
-struct mensagem {
-	long type;
-	int node_dest;
-	char programa[200];
-}
-
-struct resultado{
-	long type;
-	char tempo_inicio[20];
-	char tempo_fim[20];
-	int turnaround;
-}
+int node_num = 0;
 
 /*As chaves das filas de msg sao criadas a partir do algoritmo (key = 10*no_origem + no_destino)*/
 int instacia_gerente_de_execucao(int num_do_gerente){
@@ -38,10 +16,68 @@ int instacia_gerente_de_execucao(int num_do_gerente){
 	return pid;
 }
 
+struct mensagem receber_mensagem(int fila_de_mensagem){
+	struct mensagem msg;
+
+	if(msgrcv(fila_de_mensagem, &msg, sizeof(msg), 0, 0) < 0){
+		printf("Erro no recebimento de mensagem no node %d\n", node_num);
+		exit(1);
+	}
+
+	return msg;
+}
+
+struct resultado executa_programa(char *programa){
+	int pid, estado;
+	char *nome_programa;
+	struct resultado rst;
+	if((nome_programa = strrchr(programa, '/')) == NULL){
+		printf("Erro no parse do programa no node %d\n", node_num);
+		exit(1);
+	}
+	
+	nome_programa++;
+
+
+	if((pid = fork()) == 0){
+		execl(programa, nome_programa, NULL);
+		printf("Erro ao executar o programa\n");
+	}
+
+	wait(&estado);
+
+
+
+	return rst;
+}
+
+void envia_mensagem(struct mensagem msg, int fila_cima, int fila_direita){
+
+	if((node_num%4) == node_num){
+		if(msgsnd(fila_cima, &msg, sizeof(msg), 0) < 0){
+			printf("Erro no roteamento do node %d\n", node_num);
+			exit(1);
+		}
+	}
+	else{
+		if(msgsnd(fila_direita, &msg, sizeof(msg), 0) < 0){
+			printf("Erro no roteamento do node %d\n", node_num);
+			exit(1);
+		}	
+	}
+}
+
+void notifica_escalonador(fila_de_mensagem, rst){
+	if(msgsnd(fila_de_mensagem, &rst, sizeof(rst), 0) < 0){
+		printf("Erro no roteamento do node %d\n", node_num);
+		exit(1);
+	}
+}
+
+
 int main(int argc, char** argv){
 	int pid = 0;
 	int pid_filho = 0;
-	int node_num = 0;
 	int shmid = 0;
 	int fila_para_escalonador = -1;
 	int fila_direita = -1;
@@ -113,15 +149,16 @@ int main(int argc, char** argv){
 	}
 
 	while(TRUE){
-		receber_mensagem(fila_recebimento, &msg);
+		msg = receber_mensagem(fila_recebimento);
 
 		if(msg.node_dest == node_num){
 			matriz_ocupacao[node_num] = 1;
-			rst = executa_programa(node.programa);
+			rst = executa_programa(msg.programa);
+			matriz_ocupacao[node_num] = 0;
 			notifica_escalonador(fila_para_escalonador, rst);
 		}
 		else{
-			envia_mensagem(msg.node_dest, fila_cima, fila_direita);
+			envia_mensagem(msg, fila_cima, fila_direita);
 		}
 		
 	}

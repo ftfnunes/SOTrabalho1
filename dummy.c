@@ -10,11 +10,13 @@
 
 #define TIPO_MSG_PIDS 1
 
-struct msg_pids{
+
+struct mensagem {
 	long type;
-	int pid_direita;
-	int pid_cima;
-};
+	int node_dest;
+	char programa[200];
+}
+
 
 int instacia_gerente_de_execucao(int num_do_gerente){
 	int pid;
@@ -26,6 +28,22 @@ int instacia_gerente_de_execucao(int num_do_gerente){
 	}
 
 	return pid;
+}
+
+int instancia_filas(){
+	for(i = 0; i<11; i++){
+		if(msgget((i*10)+i+4, IPC_CREAT | 0666) < 0){
+			printf("Erro na criacao da fila %d\n", (i*10)+i+1);
+			exit(1);
+		}
+
+		if(i/4 == 0){
+			if(msgget((i*10)+i+1, IPC_CREAT | 0666) < 0){
+				printf("Erro na criacao da fila %d\n", (i*10)+i+1);
+				exit(1);
+			}
+		}
+	}
 }
 
 
