@@ -10,7 +10,6 @@
 #include <time.h>
 #include <string.h>
 #include "utils.h"
-#include <errno.h>
 
 #define TIPO_MSG_PIDS 1
 
@@ -37,7 +36,7 @@ void instancia_filas(){
 			exit(1);
 		}
 
-		if(i < 3 && i/4 == 0){
+		if(i < 3){
 			if(msgget((i*10)+i+1, IPC_CREAT | 0666) < 0){
 				printf("Erro na criacao da fila %d\n", (i*10)+i+1);
 				exit(1);
@@ -57,7 +56,7 @@ void remove_filas(){
 
 		msgctl(id, IPC_RMID, NULL);
 
-		if(i < 3 && i/4 == 0){
+		if(i < 3){
 			if((id = msgget((i*10)+i+1, 0666)) < 0){
 				printf("Erro na remocao da fila %d\n", (i*10)+i+1);
 				exit(1);
@@ -74,9 +73,9 @@ int main(){
 	int estado;
 	uint8_t *matriz;
 	int pids[16];
-	struct mensagem_exe msg;
-	struct resultado rst;
-	shutdown_msg estats;
+	mensagem_exec_t msg;
+	resultado_t rst;
+	shutdown_vector_t estats;
 	int fila_sh;
 
 
@@ -125,14 +124,14 @@ int main(){
 
 	sleep(10);
 
-	for(i=0; i<16;i++){
+	for(i=0; i<15;i++){
 		kill(pids[i], SIGKILL);
 	}
 
 	remove_filas();
-
 	msgctl(escToNode, IPC_RMID, NULL);
 	msgctl(nodesToEsc, IPC_RMID, NULL);
+	msgctl(fila_sh, IPC_RMID, NULL);
 
 	exit(0);
 }

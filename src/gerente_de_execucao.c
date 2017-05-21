@@ -1,15 +1,14 @@
 #include "gerente_de_execucao.h"
 #include "utils.h"
-#include <errno.h>
 
-external int errno;
+extern int errno;
 
 int node_num = 0;
 int pid_prog = 0;
 int pid_gerente = 0;
 uint8_t *matriz_ocupacao;
-struct mensagem_exe msg;
-shutdown_msg estatisticas;
+mensagem_exec_t msg;
+shutdown_vector_t estatisticas;
 
 /*As chaves das filas de msg sao criadas a partir do algoritmo (key = 10*no_origem + no_destino)*/
 int instancia_gerente_de_execucao(int num_do_gerente){
@@ -24,8 +23,8 @@ int instancia_gerente_de_execucao(int num_do_gerente){
 	return pid;
 }
 
-struct mensagem_exe receber_mensagem(int fila_de_mensagem){
-	struct mensagem_exe msg;
+mensagem_exec_t receber_mensagem(int fila_de_mensagem){
+	mensagem_exec_t msg;
 
 	if(msgrcv(fila_de_mensagem, &msg, sizeof(msg), 0, 0) < 0){
 		printf("Erro no recebimento de mensagem no node %d\n", node_num);
@@ -37,11 +36,11 @@ struct mensagem_exe receber_mensagem(int fila_de_mensagem){
 	return msg;
 }
 
-struct resultado executa_programa(char *programa){
+resultado_t executa_programa(char *programa){
 	int estado;
 	time_t inicio, fim;
 	char *nome_programa;
-	struct resultado rst;
+	resultado_t rst;
 
 	if((nome_programa = strrchr(programa, '/')) == NULL){
 		printf("Erro no parse do programa no node %d\n", node_num);
@@ -83,7 +82,7 @@ struct resultado executa_programa(char *programa){
 	return rst;
 }
 
-void envia_mensagem(struct mensagem_exe msg, int fila_cima, int fila_direita){
+void envia_mensagem(mensagem_exec_t msg, int fila_cima, int fila_direita){
 
 	if(node_num > 3 || (msg.info.node_dest%4) == node_num){
 		if(msgsnd(fila_cima, &msg, sizeof(msg), 0) < 0){
@@ -99,7 +98,7 @@ void envia_mensagem(struct mensagem_exe msg, int fila_cima, int fila_direita){
 	}
 }
 
-void notifica_escalonador(int fila_de_mensagem, struct resultado rst){
+void notifica_escalonador(int fila_de_mensagem, resultado_t rst){
 	if(msgsnd(fila_de_mensagem, &rst, sizeof(rst), 0) < 0){
 		printf("Erro no roteamento do node %d\n", node_num);
 		exit(1);
@@ -133,7 +132,7 @@ int main(int argc, char** argv){
 	int fila_direita = -1;
 	int fila_cima = -1;
 	int fila_recebimento = -1;
-	struct resultado rst;
+	resultado_t rst;
 
 	if(argc != 2){
 		printf("Gerente de execucao iniciado incorretamente\n");
@@ -145,6 +144,7 @@ int main(int argc, char** argv){
 	node_num = atoi(argv[1]);
 	pid_gerente = getpid();
 	estatisticas.info.total = 0;
+	estatisticas.mtype = 1;
 
 
 	if((shmid = shmget(0x33, 16*sizeof(uint8_t), 0666)) < 0){
@@ -164,7 +164,7 @@ int main(int argc, char** argv){
 
 
 	/*As filas devem ser criadas antes da criacao dos processos (IPC_CREAT)*/
-	if((node_num/4) == 0){
+	if(node_num < 4){
 	/*node zero recebe, do escalonador */
 		if(node_num == 0){
 			if((fila_recebimento = msgget(FILA_DO_ESCALONADOR_K, 0666)) < 0){
@@ -186,14 +186,14 @@ int main(int argc, char** argv){
 		}
 	}
 
-	if(node_num/4 < 3){
+	if(node_num < 12){
 		if((fila_cima = msgget((node_num*10)+node_num+4, 0666)) < 0){
 			printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 			exit(1);
 		}
 	}
 
-	if(node_num != 3 && node_num/4 == 0){
+	if(node_num < 3){
 		if((fila_direita = msgget((node_num*10)+node_num+1, 0666)) < 0){
 			printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 			exit(1);
