@@ -127,7 +127,7 @@ void remove_recursos(){
 	shmctl(shmid, IPC_RMID, NULL);
 	shmctl(shm_pids, IPC_RMID, NULL);
 
-
+	semctl(idsem, 1, IPC_RMID, NULL);
 }
 
 
@@ -143,7 +143,7 @@ void finaliza_escalonador(){
 
 
 int main(){
-	int estado, pid, job = 0, i, sai = 0, conta_livres;
+	int estado, pid = -1, job = 0, i = 0;
 
 	mensagem_sol_t msg_sol;
 	mensagem_exec_t msg_exe;
@@ -158,7 +158,7 @@ int main(){
 	instancia_filas();
 
 	/* Instancia uma área de memória compartilhada que abrigará os pids de todos os processos dos gerentes de execução. */
-	shm_pids = shmget(0x120700, sizeof(pids_t), IPC_CREAT | 0666);
+	shm_pids = shmget(MEM_PIDS, sizeof(pids_t), IPC_CREAT | 0666);
 	if (shm_pids < 0) {
 		printf("Erro na alocacao da memoria compartilhada\n");
 		exit(1);
@@ -171,7 +171,7 @@ int main(){
 	}
 
 	/* Criação da fila de mensagens que recebe as solicitações de execução vindas dos processos de solicitação de execução. */
-	if((filaSolicitacoes = msgget(0x1, IPC_CREAT | 0666)) < 0){
+	if((filaSolicitacoes = msgget(FILA_SOLICITACAO_K, IPC_CREAT | 0666)) < 0){
 		printf("Erro na criação da fila.\n");
 		exit(1);
 	}
@@ -213,17 +213,15 @@ int main(){
 	/* Atribui*/
 	for(i = 0; i < 16; ++i){
 		pids->pids_v[i] = instancia_gerente_de_execucao(i);
-		printf("%d\n", pids->pids_v[i]);
 	}
 	pids->pid_esc = getpid();
 
-
 	while(1){
-		if(msgrcv(filaSolicitacoes, &msg_sol, sizeof(mensagem_sol_t), 0, 0) < 0){
+		if(msgrcv(filaSolicitacoes, &msg_sol, sizeof(msg_sol), 0, 0) < 0){
 			printf("Erro na recepcao de solicitacao no escalonador\n");
 			exit(1);
 		}
-
+		
 		++job;
 
 		/* Atribui à variável 'tempo' o tempo em que a mensagem foi recebida. */
@@ -247,6 +245,8 @@ int main(){
 					sai = 1;
 			}*/
 
+
+
 			for(i = 15; i >= 0; --i) {
 				/* Atribui 1 ao tipo, pois esse tipo não é relevante nos processos gerenciadores de execução (não são verificados os tipos das mensagens) */
 				msg_exe.mtype = 1;
@@ -265,7 +265,7 @@ int main(){
 			/*Não estamos verificando se a fila de mensagens está cheia. */
 
 			for(i = 0; i < 16; ++i){
-				if(msgrcv(nodesToEsc, &res, sizeof(resultado_t), 0, 0) < 0){
+				if(msgrcv(nodesToEsc, &res, sizeof(res), 0, 0) < 0){
 					printf("Erro na recepcao de resposta para o escalonador\n");\
 					exit(1);
 				}

@@ -1,5 +1,5 @@
 IDIR =./include
-CC=cc
+CC=gcc
 CFLAGS=-D_GNU_SOURCE -ansi -Wall -g -I$(IDIR)
 
 SRC_DIR = ./src

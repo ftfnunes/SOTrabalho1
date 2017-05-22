@@ -32,8 +32,8 @@ mensagem_exec_t receber_mensagem(int fila_de_mensagem){
 		exit(1);
 	}
 
-	printf("%d recebeu a msg! node dest: %d\n", node_num, msg.info.node_dest);
-
+	/*printf("%d recebeu a msg! node dest: %d\n", node_num, msg.info.node_dest);
+*/
 	return msg;
 }
 
@@ -98,8 +98,8 @@ void envia_mensagem(mensagem_exec_t msg, int fila_cima, int fila_direita){
 		}	
 	}
 
-	printf("%d enviou a msg! node dest: %d\n", node_num, msg.info.node_dest);
-
+	/*printf("%d enviou a msg! node dest: %d\n", node_num, msg.info.node_dest);
+*/
 }
 
 void notifica_escalonador(int fila_de_mensagem, resultado_t rst){
@@ -116,7 +116,7 @@ void trata_shutdown(){
 		printf("O programa %s nao completou sua execucao no node %d\n", msg.info.programa, node_num);
 	}
 	
-	if((fila_shutdown = msgget(0x120700, 0666)) < 0){
+	if((fila_shutdown = msgget(FILA_SHUTDOWN_K, 0666)) < 0){
 		printf("Erro na obtencao da fila de shutdown no node %d\n", node_num);
 		exit(1);
 	}
@@ -175,14 +175,12 @@ int main(int argc, char** argv){
 				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 				exit(1);
 			}
-			printf("Id fila de recebimento no 0 :%d\n", fila_recebimento);
 		}			
 		else{
 			if((fila_recebimento = msgget((node_num-1)*10 + node_num, 0666)) < 0){
 				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 				exit(1);
 			}
-			printf("Id fila de recebimento no  < 3 :%d\n", fila_recebimento);
 		}
 	}			
 	else{

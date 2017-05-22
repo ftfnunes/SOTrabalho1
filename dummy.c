@@ -135,15 +135,16 @@ void teste_gerente(){
 
 
 int main(){
-	int filaSol, i, shm_pids;
+	int filaSol, i, j, shm_pids;
 	pids_t *pids;
 	mensagem_sol_t msg;
+	shutdown_vector_t estatisticas;
 	int fila_sh = -1;
 
 
-	fila_sh = msgget(0x120700, IPC_CREAT | 0666);
+	fila_sh = msgget(FILA_SHUTDOWN_K, IPC_CREAT | 0666);
 
-	shm_pids = shmget(0x120700, sizeof(pids_t), 0666);
+	shm_pids = shmget(MEM_PIDS, sizeof(pids_t), 0666);
 	if (shm_pids < 0) {
 		printf("Erro na alocacao da memoria compartilhada\n");
 		exit(1);
@@ -155,35 +156,109 @@ int main(){
 		exit(1);
 	}
 
-	for(i=0; i< 16; i++)
-		printf("%d  ", pids->pids_v[i]);
-
-	if((filaSol = msgget(0x1, 0666)) < 0){
+	if((filaSol = msgget(FILA_SOLICITACAO_K, 0666)) < 0){
 		printf("Erro na criação da fila.\n");
 		exit(1);
 	}
 
 	msg.mtype = 1;
 	strcpy(msg.info.programa, "./teste");
-	msg.info.seg = 4;
+	msg.info.seg = 3;
+
+	printf("solicitacao enviada %d %s\n", msg.info.seg, msg.info.programa);
+
+	if(msgsnd(filaSol, &msg, sizeof(msg), 0) < 0){
+		printf("Erro no envio %d\n", errno);
+		exit(1);
+	}
+
+	sleep(2);
+
+	msg.mtype = 1;
+	strcpy(msg.info.programa, "./teste");
+	msg.info.seg = 3;
+
+
+	printf("solicitacao enviada %d %s\n", msg.info.seg, msg.info.programa);
+
+	if(msgsnd(filaSol, &msg, sizeof(msg), 0) < 0){
+		printf("Erro no envio %d\n", errno);
+		exit(1);
+	}
+
+	msg.mtype = 1;
+	strcpy(msg.info.programa, "./teste");
+	msg.info.seg = 6;
+
+	printf("solicitacao enviada %d %s\n", msg.info.seg, msg.info.programa);
+
+	if(msgsnd(filaSol, &msg, sizeof(msg), 0) < 0){
+		printf("Erro no envio %d\n", errno);
+		exit(1);
+	}
+
+	sleep(3);
+
+	msg.mtype = 1;
+	strcpy(msg.info.programa, "./teste");
+	msg.info.seg = 3;
+
+	printf("solicitacao enviada %d %s\n", msg.info.seg, msg.info.programa);
 
 	if(msgsnd(filaSol, &msg, sizeof(msg), 0) < 0){
 		printf("Erro no envio %d\n", errno);
 		exit(1);
 	}
 	
-	sleep(20);
+
+	msg.mtype = 1;
+	strcpy(msg.info.programa, "./teste");
+	msg.info.seg = 10;
+
+	printf("solicitacao enviada %d %s\n", msg.info.seg, msg.info.programa);
+
+	if(msgsnd(filaSol, &msg, sizeof(msg), 0) < 0){
+		printf("Erro no envio %d\n", errno);
+		exit(1);
+	}
+
+	sleep(2);
+
+
+	msg.mtype = 1;
+	strcpy(msg.info.programa, "./teste");
+	msg.info.seg = 10;
+
+	printf("solicitacao enviada %d %s\n", msg.info.seg, msg.info.programa);
+
+	if(msgsnd(filaSol, &msg, sizeof(msg), 0) < 0){
+		printf("Erro no envio %d\n", errno);
+		exit(1);
+	}
+
+	sleep(40);
 
 	for(i=0; i<16;i++){
 		kill(pids->pids_v[i], SIGUSR1);
 	}
-	printf("mandei matar\n");
-
+	
+	kill(pids->pid_esc, SIGUSR1);
 
 	sleep(20);
 
+	for(i=0; i<16; i++){
+		if(msgrcv(fila_sh, &estatisticas, sizeof(estatisticas), 0, 0) < 0){
+			printf("Erro ao receber estatisticas\n");
+			exit(1);
+		}
+
+		printf("res[%d]\n", i);
+		for(j=0; j<estatisticas.info.total; j++){
+			printf("%d    %s    %s    %s     %s\n", estatisticas.info.vetor[j].pid, estatisticas.info.vetor[j].programa, estatisticas.info.vetor[j].tempo_submissao, estatisticas.info.vetor[j].tempo_inicio, estatisticas.info.vetor[j].tempo_fim );	
+		}
+		printf("\n\n");
+	}
+
 	msgctl(fila_sh, IPC_RMID, NULL);
-	
-	kill(pids->pid_esc, SIGUSR1);
 	exit(0);
 }
