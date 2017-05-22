@@ -58,5 +58,5 @@ typedef struct {
 
 typedef struct {
 	uint32_t pids_v[TAM_PIDS];
-	uint8_t cont;
+	uint32_t pid_esc;
 } pids_t;

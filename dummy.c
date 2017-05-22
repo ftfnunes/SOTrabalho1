@@ -66,8 +66,7 @@ void remove_filas(){
 	}
 }
 
-
-int main(){
+void teste_gerente(){
 	int escToNode, nodesToEsc, shmid;
 	int pid, i;
 	int estado;
@@ -132,6 +131,52 @@ int main(){
 	msgctl(escToNode, IPC_RMID, NULL);
 	msgctl(nodesToEsc, IPC_RMID, NULL);
 	msgctl(fila_sh, IPC_RMID, NULL);
+}
+
+
+int main(){
+	int filaSol, i, shm_pids;
+	pids_t *pids;
+	mensagem_sol_t msg;
+
+
+	shm_pids = shmget(0x120700, sizeof(pids_t), 0666);
+	if (shm_pids < 0) {
+		printf("Erro na alocacao da memoria compartilhada\n");
+		exit(1);
+	}
+	/* Atribuição à variável o ponteiro para a memória compartilhada. */
+	pids = (pids_t*) shmat(shm_pids, 0, 0);
+	if (pids < 0) {
+		printf("Erro na associacao da memoria compartilhada\n");
+		exit(1);
+	}
+
+	for(i=0; i< 16; i++)
+		printf("%d  ", pids->pids_v[i]);
+
+	if((filaSol = msgget(0x1, 0666)) < 0){
+		printf("Erro na criação da fila.\n");
+		exit(1);
+	}
+
+	msg.mtype = 1;
+	strcpy(msg.info.programa, "./teste");
+	msg.info.seg = 4;
+
+	if(msgsnd(filaSol, &msg, sizeof(msg), 0) < 0){
+		printf("Erro no envio %d\n", errno);
+		exit(1);
+	}
+	
+	sleep(20);
+
+	for(i=0; i<16;i++){
+		kill(pids->pids_v[i], SIGUSR1);
+	}
+	printf("mandei matar\n");
+
+	kill(pids->pid_esc, SIGUSR1);
 
 	exit(0);
 }

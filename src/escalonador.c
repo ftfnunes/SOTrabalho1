@@ -37,7 +37,7 @@ int shm_pids, nodesToEsc, idsem;
 pids_t *pids;
 struct sembuf operacao[2];
 
-int p_sem(){
+void p_sem(){
 	/* Operação que verifica se o semáforo é igual a 0.*/
 	operacao[0].sem_num = 0;
 	operacao[0].sem_op = 0;
@@ -51,7 +51,7 @@ int p_sem(){
 		printf("Erro na operação P.\n");
 }
 
-int v_sem(){
+void v_sem(){
 	/* Operação que retorna o semáforo a 0.*/
 	operacao[0].sem_num = 0;
 	operacao[0].sem_op = -1;
@@ -93,7 +93,7 @@ void instancia_filas(){
 	}
 }
 
-void remove_filas(){
+void remove_recursos(){
 	int i, id;
 
 	for(i = 0; i<=11; i++){
@@ -114,7 +114,7 @@ void remove_filas(){
 	}
 
 	msgctl(filaExecucao, IPC_RMID, NULL);
-	msgctl(filaSolicitacao, IPC_RMID, NULL);
+	msgctl(filaSolicitacoes, IPC_RMID, NULL);
 	msgctl(nodesToEsc, IPC_RMID, NULL);
 
 	shmctl(shmid, IPC_RMID, NULL);
@@ -125,7 +125,11 @@ void remove_filas(){
 
 
 void finaliza_escalonador(){
-	remove_filas();		
+	int i, estado;
+	remove_recursos();
+	for(i=0; i<16; i++){
+		wait(&estado);
+	}		
 	exit(0);
 }
 
@@ -159,41 +163,32 @@ int main(){
 		exit(1);
 	}
 
-	/* Atribui*/
-	for(i = 0; i < 16; ++i)
-		pids->pids_v[i] = instancia_gerente_de_execucao(i);
-	
-
-	i = 0;
-
-
-
 	/* Criação da fila de mensagens que recebe as solicitações de execução vindas dos processos de solicitação de execução. */
-	if(filaSolicitacoes = msgget(0x1, IPC_CREAT | 0666) < 0){
+	if((filaSolicitacoes = msgget(0x1, IPC_CREAT | 0666)) < 0){
 		printf("Erro na criação da fila.\n");
 		exit(1);
 	}
 
-	/* Criação da fila de mensagens para envio das mensagens com os programas a serem executados para os gerentes de execução. */
-	if(filaExecucao = msgget(FILA_DO_ESCALONADOR_K, IPC_CREAT | 0666) < 0){
+	/* Criação da fila de mensagens para envio das mensagens co)m os programas a serem executados para os gerentes de execução. */
+	if((filaExecucao = msgget(FILA_DO_ESCALONADOR_K, IPC_CREAT | 0666)) < 0){
 		printf("Erro na criação da fila.\n");
 		exit(1); 
 	}
 
-	if(nodesToEsc = msgget(FILA_PARA_ESCALONADOR_K, IPC_CREAT | 0666) < 0) {
+	if((nodesToEsc = msgget(FILA_PARA_ESCALONADOR_K, IPC_CREAT | 0666)) < 0) {
 		printf("Erro na criação da fila.\n");
 		exit(1); 
 	}
 
 
 	/* Criação de um vetor de inteiros em memória compartilhada para verificar se os gerentes de execução estão livres. */
-	if(shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666)){
+	if((shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666)) < 0){
 		printf("Erro na criação de memória compartilhada.\n");
 		exit(1);
 	}
 
 	/* Atribuição à variável "mtzGerentesExec" a área de memória compartilhada que abriga o vetor com o status dos gerentes de execução, se estão livre ou nao. */
-	if(mtzGerentesExec = (int *) shmat(shmid, 0, 0)){
+	if((mtzGerentesExec = (int *) shmat(shmid, 0, 0)) < 0){
 		printf("Erro na atribuição de memória compartilhada.\n");
 		exit(1);
 	}
@@ -203,6 +198,13 @@ int main(){
 		printf("Erro na criação de semáforo.\n");
 		exit(1);
 	}
+
+	/* Atribui*/
+	for(i = 0; i < 16; ++i){
+		pids->pids_v[i] = instancia_gerente_de_execucao(i);
+		printf("%d\n", pids->pids_v[i]);
+	}
+	pids->pid_esc = getpid();
 
 
 	while(1){
