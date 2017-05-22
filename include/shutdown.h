@@ -8,5 +8,3 @@
 #include <sys/sem.h>
 #include <unistd.h>
 #include <sys/wait.h>
-
-#define SHUTDOWN_VECTOR_MTYPE 10

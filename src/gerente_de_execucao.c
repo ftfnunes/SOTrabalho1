@@ -26,13 +26,14 @@ int instancia_gerente_de_execucao(int num_do_gerente){
 mensagem_exec_t receber_mensagem(int fila_de_mensagem){
 	mensagem_exec_t msg;
 
+
 	if(msgrcv(fila_de_mensagem, &msg, sizeof(msg), 0, 0) < 0){
 		printf("Erro no recebimento de mensagem no node %d\n", node_num);
 		exit(1);
 	}
 
-	/*printf("%d recebeu a msg! node dest: %d\n", node_num, msg.info.node_dest);
-*/
+	printf("%d recebeu a msg! node dest: %d\n", node_num, msg.info.node_dest);
+
 	return msg;
 }
 
@@ -86,16 +87,19 @@ void envia_mensagem(mensagem_exec_t msg, int fila_cima, int fila_direita){
 
 	if(node_num > 3 || (msg.info.node_dest%4) == node_num){
 		if(msgsnd(fila_cima, &msg, sizeof(msg), 0) < 0){
-			printf("Erro no roteamento do node %d\n", node_num);
+			printf("Erro no roteamento do node %d com erro %d para node %d\n", node_num, errno, msg.info.node_dest);
 			exit(1);
 		}
 	}
 	else{
 		if(msgsnd(fila_direita, &msg, sizeof(msg), 0) < 0){
-			printf("Erro no roteamento do node %d\n", node_num);
+			printf("Erro no roteamento do node %d com erro %d para node %d\n", node_num, errno, msg.info.node_dest);
 			exit(1);
 		}	
 	}
+
+	printf("%d enviou a msg! node dest: %d\n", node_num, msg.info.node_dest);
+
 }
 
 void notifica_escalonador(int fila_de_mensagem, resultado_t rst){
@@ -171,12 +175,14 @@ int main(int argc, char** argv){
 				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 				exit(1);
 			}
+			printf("Id fila de recebimento no 0 :%d\n", fila_recebimento);
 		}			
 		else{
 			if((fila_recebimento = msgget((node_num-1)*10 + node_num, 0666)) < 0){
 				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
 				exit(1);
 			}
+			printf("Id fila de recebimento no  < 3 :%d\n", fila_recebimento);
 		}
 	}			
 	else{

@@ -138,7 +138,10 @@ int main(){
 	int filaSol, i, shm_pids;
 	pids_t *pids;
 	mensagem_sol_t msg;
+	int fila_sh = -1;
 
+
+	fila_sh = msgget(0x120700, IPC_CREAT | 0666);
 
 	shm_pids = shmget(0x120700, sizeof(pids_t), 0666);
 	if (shm_pids < 0) {
@@ -176,7 +179,11 @@ int main(){
 	}
 	printf("mandei matar\n");
 
-	kill(pids->pid_esc, SIGUSR1);
 
+	sleep(20);
+
+	msgctl(fila_sh, IPC_RMID, NULL);
+	
+	kill(pids->pid_esc, SIGUSR1);
 	exit(0);
 }

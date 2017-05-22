@@ -32,7 +32,10 @@
 */
 
 
-int filaSolicitacoes, filaExecucao,  *mtzGerentesExec, shmid;
+int filaSolicitacoes = -1; 
+int filaExecucao = -1;
+int shmid;
+uint8_t  *mtzGerentesExec; 
 int shm_pids, nodesToEsc, idsem;
 pids_t *pids;
 struct sembuf operacao[2];
@@ -102,18 +105,22 @@ void remove_recursos(){
 			exit(1);
 		}
 
-		msgctl(id, IPC_RMID, NULL);
+		if(msgctl(id, IPC_RMID, NULL) == 0)
+			printf("Fila %d removida\n", (i*10)+i+4);
 
 		if(i < 3){
 			if((id = msgget((i*10)+i+1, 0666)) < 0){
 				printf("Erro na remocao da fila %d\n", (i*10)+i+1);
 				exit(1);
 			}
-			msgctl(id, IPC_RMID, NULL);
+			if(msgctl(id, IPC_RMID, NULL) == 0)
+				printf("Fila %d removida\n", (i*10)+i+1);
 		}
 	}
 
-	msgctl(filaExecucao, IPC_RMID, NULL);
+	if(msgctl(filaExecucao, IPC_RMID, NULL) == 0){
+		printf("Fila removida\n");
+	}
 	msgctl(filaSolicitacoes, IPC_RMID, NULL);
 	msgctl(nodesToEsc, IPC_RMID, NULL);
 
@@ -139,7 +146,7 @@ int main(){
 	int estado, pid, job = 0, i, sai = 0, conta_livres;
 
 	mensagem_sol_t msg_sol;
-	mensagem_exec_t msg_exe[16];
+	mensagem_exec_t msg_exe;
 	resultado_t res;
 
 	time_t tempo;
@@ -188,9 +195,13 @@ int main(){
 	}
 
 	/* Atribuição à variável "mtzGerentesExec" a área de memória compartilhada que abriga o vetor com o status dos gerentes de execução, se estão livre ou nao. */
-	if((mtzGerentesExec = (int *) shmat(shmid, 0, 0)) < 0){
+	if((mtzGerentesExec = (uint8_t *) shmat(shmid, 0, 0)) < 0){
 		printf("Erro na atribuição de memória compartilhada.\n");
 		exit(1);
+	}
+
+	for(i = 0; i < 16; i++){
+		mtzGerentesExec[i] = 0;
 	}
 
 	/* Criação do semáforo. */
@@ -208,7 +219,10 @@ int main(){
 
 
 	while(1){
-		msgrcv(filaSolicitacoes, &msg_sol, sizeof(mensagem_sol_t), 0, 0);
+		if(msgrcv(filaSolicitacoes, &msg_sol, sizeof(mensagem_sol_t), 0, 0) < 0){
+			printf("Erro na recepcao de solicitacao no escalonador\n");
+			exit(1);
+		}
 
 		++job;
 
@@ -219,9 +233,7 @@ int main(){
 
 		if(pid == 0){
 			/* O processo irá realizar um sleep até que que delay desejado seja simulado. */
-			sleep(msg_sol.info.seg);
-
-			/* Loop verifica se todos os gerenciadores de processo estão livres.*/
+			sleep(msg_sol.info.seg);			/* Loop verifica se todos os gerenciadores de processo estão livres.*/
 
 			p_sem();
 
@@ -237,12 +249,15 @@ int main(){
 
 			for(i = 15; i >= 0; --i) {
 				/* Atribui 1 ao tipo, pois esse tipo não é relevante nos processos gerenciadores de execução (não são verificados os tipos das mensagens) */
-				msg_exe[i].mtype = 1;
-				strcpy(msg_exe[i].info.programa, msg_sol.info.programa);
-				msg_exe[i].info.node_dest = i;
-				msg_exe[i].info.tempo_submissao = tempo;
+				msg_exe.mtype = 1;
+				strcpy(msg_exe.info.programa, msg_sol.info.programa);
+				msg_exe.info.node_dest = i;
+				msg_exe.info.tempo_submissao = tempo;
 
-				msgsnd(filaExecucao, &(msg_exe[i]), sizeof(resultado_t), IPC_NOWAIT);
+				if(msgsnd(filaExecucao, &(msg_exe), sizeof(msg_exe), 0) < 0){
+					printf("Erro no envio da mensagem do escalonador para o node %d\n", i);
+					exit(1);
+				}
 			}
 
 			
@@ -250,7 +265,10 @@ int main(){
 			/*Não estamos verificando se a fila de mensagens está cheia. */
 
 			for(i = 0; i < 16; ++i){
-				msgrcv(nodesToEsc, &res, sizeof(resultado_t), 0, 0);
+				if(msgrcv(nodesToEsc, &res, sizeof(resultado_t), 0, 0) < 0){
+					printf("Erro na recepcao de resposta para o escalonador\n");\
+					exit(1);
+				}
 				printf("job = %d, arquivo = %s, delay = %d, makespan = %ld\n", job, msg_sol.info.programa, msg_sol.info.seg, res.info.turnaround);
 			}
 
@@ -260,7 +278,7 @@ int main(){
 		}
 
 		/* Registrando o wait com o PID do filho antes de continuar o loop. */
-		waitpid(pid, &estado, WNOWAIT);
+		waitpid(pid, &estado, WNOHANG);
 	}
 
 	return 0;
