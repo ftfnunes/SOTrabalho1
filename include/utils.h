@@ -22,13 +22,13 @@ typedef struct {
 	} info;
 } mensagem_exec_t;
 
-struct mensagem_sol {
+typedef struct {
 	long mtype;
 	struct msg_sol {
 		int seg;
 		char programa[TAM_PROGRAMA];
-	} sol;
-};
+	} info;
+} mensagem_sol_t;
 
 typedef struct {
 	long mtype;
