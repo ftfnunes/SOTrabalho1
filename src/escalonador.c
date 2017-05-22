@@ -96,7 +96,7 @@ void instancia_filas(){
 	}
 }
 
-void remove_recursos(){
+void remove_recursos() {
 	int i, id;
 
 	for(i = 0; i<=11; i++){
@@ -105,29 +105,29 @@ void remove_recursos(){
 			exit(1);
 		}
 
-		if(msgctl(id, IPC_RMID, NULL) == 0)
-			printf("Fila %d removida\n", (i*10)+i+4);
+		else{
+			(msgctl(id, IPC_RMID, NULL) == 0) ? printf("Fila %d removida\n", (i*10)+i+4) : printf("Erro, fila %d nao pode ser removida\n", (i*10)+i+4);
+		}
 
 		if(i < 3){
 			if((id = msgget((i*10)+i+1, 0666)) < 0){
 				printf("Erro na remocao da fila %d\n", (i*10)+i+1);
 				exit(1);
 			}
-			if(msgctl(id, IPC_RMID, NULL) == 0)
-				printf("Fila %d removida\n", (i*10)+i+1);
+			else{
+				(msgctl(id, IPC_RMID, NULL) == 0) ? printf("Fila %d removida\n", (i*10)+i+1) : printf("Erro, fila %d nao pode ser removida\n", (i*10)+i+1);
+			}
 		}
 	}
 
-	if(msgctl(filaExecucao, IPC_RMID, NULL) == 0){
-		printf("Fila removida\n");
-	}
-	msgctl(filaSolicitacoes, IPC_RMID, NULL);
-	msgctl(nodesToEsc, IPC_RMID, NULL);
+	(msgctl(filaExecucao, IPC_RMID, NULL) == 0) ? printf("Fila de execucao removida\n") : printf("Erro, fila de execucao nao pode ser removida\n");
+	(msgctl(filaSolicitacoes, IPC_RMID, NULL) == 0) ? printf("Fila de solicitacoes removida\n") : printf("Erro, fila de solicitacoes nao pode ser removida\n");
+	(msgctl(nodesToEsc, IPC_RMID, NULL) == 0) ? printf("Fila nodesToEsc removida\n") : printf("Erro, fila nodesToEsc nao pode ser removida\n");
 
-	shmctl(shmid, IPC_RMID, NULL);
-	shmctl(shm_pids, IPC_RMID, NULL);
+	(shmctl(shmid, IPC_RMID, NULL) == 0) ? printf("Matriz de ocupacao removida\n") : printf("Erro, matriz de ocupacao nao pode ser removida\n");
+	(shmctl(shm_pids, IPC_RMID, NULL) == 0) ? printf("Vetor de pids removido\n") : printf("Erro, vetor de pids nao pode ser removido\n");
 
-	semctl(idsem, 1, IPC_RMID, NULL);
+	(semctl(idsem, 1, IPC_RMID, NULL) == 0) ?  printf("Semaforo removido\n") : printf("Erro, semaforo nao pode ser removido\n");
 }
 
 
@@ -156,19 +156,9 @@ int main(){
 
 	/* Instancia as filas entre os gerentes de execução dentro do Torus. */
 	instancia_filas();
+	printf("Todas as filas do Torus criadas com sucesso.\n");
 
 	/* Instancia uma área de memória compartilhada que abrigará os pids de todos os processos dos gerentes de execução. */
-	shm_pids = shmget(MEM_PIDS, sizeof(pids_t), IPC_CREAT | 0666);
-	if (shm_pids < 0) {
-		printf("Erro na alocacao da memoria compartilhada\n");
-		exit(1);
-	}
-	/* Atribuição à variável o ponteiro para a memória compartilhada. */
-	pids = (pids_t*) shmat(shm_pids, 0, 0);
-	if (pids < 0) {
-		printf("Erro na associacao da memoria compartilhada\n");
-		exit(1);
-	}
 
 	/* Criação da fila de mensagens que recebe as solicitações de execução vindas dos processos de solicitação de execução. */
 	if((filaSolicitacoes = msgget(FILA_SOLICITACAO_K, IPC_CREAT | 0666)) < 0){
@@ -187,6 +177,20 @@ int main(){
 		exit(1); 
 	}
 
+
+	printf("Filas de solicitacao, de execucao e nodesToEsc criadas com sucesso!\n");
+
+	shm_pids = shmget(MEM_PIDS, sizeof(pids_t), IPC_CREAT | 0666);
+	if (shm_pids < 0) {
+		printf("Erro na alocacao da memoria compartilhada\n");
+		exit(1);
+	}
+	/* Atribuição à variável o ponteiro para a memória compartilhada. */
+	pids = (pids_t*) shmat(shm_pids, 0, 0);
+	if (pids < 0) {
+		printf("Erro na associacao da memoria compartilhada\n");
+		exit(1);
+	}
 
 	/* Criação de um vetor de inteiros em memória compartilhada para verificar se os gerentes de execução estão livres. */
 	if((shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666)) < 0){
@@ -210,11 +214,17 @@ int main(){
 		exit(1);
 	}
 
-	/* Atribui*/
+	printf("Areas de memoria compartilhada (de pids e matriz de ocupacao) e semaforo criados com sucesso!\n");
+
+
+	printf("Pids dos gerentes: ");
 	for(i = 0; i < 16; ++i){
 		pids->pids_v[i] = instancia_gerente_de_execucao(i);
+		printf("%d\t", pids->pids_v[i]);
 	}
 	pids->pid_esc = getpid();
+
+	printf("\nGerentes de execucao instanciados com sucesso!\n");
 
 	while(1){
 		if(msgrcv(filaSolicitacoes, &msg_sol, sizeof(msg_sol), 0, 0) < 0){
@@ -235,18 +245,6 @@ int main(){
 
 			p_sem();
 
-			/*while(!sai){
-				conta_livres = 0;
-				for(i = 0; i < 16; ++i){
-					if(mtzGerentesExec[i] == 0 )
-						++conta_livres;
-				}
-				if(conta_livres == 16)
-					sai = 1;
-			}*/
-
-
-
 			for(i = 15; i >= 0; --i) {
 				/* Atribui 1 ao tipo, pois esse tipo não é relevante nos processos gerenciadores de execução (não são verificados os tipos das mensagens) */
 				msg_exe.mtype = 1;
@@ -259,10 +257,6 @@ int main(){
 					exit(1);
 				}
 			}
-
-			
-
-			/*Não estamos verificando se a fila de mensagens está cheia. */
 
 			for(i = 0; i < 16; ++i){
 				if(msgrcv(nodesToEsc, &res, sizeof(res), 0, 0) < 0){
