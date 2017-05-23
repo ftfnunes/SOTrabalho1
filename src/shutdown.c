@@ -38,7 +38,7 @@ void send_shutdown() {
 int read_data() {
 	int i, j;
 	
-	for (i = 0; i < 16; ++i) {
+	for (i = 0; i < TAM_PIDS; ++i) {
 		if(msgrcv(fila_shutdown, &msg, sizeof(msg), 0, 0) < 0) {
 			printf("Erro %d no recebimento da mensagem.\n", errno);
 			exit(0);
