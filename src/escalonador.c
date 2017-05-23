@@ -120,8 +120,9 @@ void remove_recursos() {
 	}
 
 	/* Envia sinais SIGUSR2 para os filhos do escalonador, indicando a eles que devem terminar imediatamente.*/
-	for (i = 0; i < conta_procs; ++i)
+	for (i = 0; i < conta_procs; ++i){
 		kill(pids_procs[i], SIGUSR2);
+	}
 	
 
 	(msgctl(filaSolicitacoes, IPC_RMID, NULL) == 0) ? printf("Fila de solicitacoes removida\n") : printf("Erro, fila de solicitacoes nao pode ser removida\n");
@@ -137,7 +138,11 @@ void finaliza_escalonador(){
 	remove_recursos();
 	for(i=0; i<16; i++){
 		wait(&estado);
-	}		
+	}
+	/* Registrando o wait com o PID do filho antes de continuar o loop. */
+	for(i = 0; i < conta_procs; i++){
+		waitpid(pids_procs[i], &estado, 0);
+	}
 	exit(0);
 }
 
