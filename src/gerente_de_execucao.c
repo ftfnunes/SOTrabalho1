@@ -129,6 +129,7 @@ void trata_shutdown(){
 		exit(1);
 	}
 
+	printf("Terminando gerente %d\n", node_num);
 	exit(0);
 }
 

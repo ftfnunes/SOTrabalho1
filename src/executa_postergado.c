@@ -29,15 +29,19 @@ int main(int argc, char* argv[]) {
 	msg.info.seg = atoi(argv[1]);
 	strcpy(msg.info.programa, argv[2]);
 
-	if((msqid = msgget((ftok(path,(key_t)FILA_SOLICITACAO_K)), IPC_CREAT | 0666)) < 0) {
+	if((msqid = msgget(FILA_SOLICITACAO_K/*(ftok(path,(key_t)FILA_SOLICITACAO_K))*/, 0666)) < 0) {
 		printf("Erro na criação da fila.\n");
 	}
 
-	printf("identificador da fila: %d\n", msqid) ;
+	/*printf("identificador da fila: %d\n", msqid) ;
     printf("esta fila esta associada a chave unica (job): %#x\n"
                             ,ftok(path,(key_t)FILA_SOLICITACAO_K));
+*/
+    
 
-	msgsnd(msqid ,&msg, sizeof(msg), 0);
+	if(msgsnd(msqid ,&msg, sizeof(msg), 0) < 0){
+		printf("Erro no envio de solicitacao\n");
+	}
 
   	return 0;
 }

@@ -1,5 +1,8 @@
 #include "shutdown.h"
 #include "utils.h"
+#include <errno.h>
+
+extern int errno;
 
 int shm_pids = -1;
 pids_t *pids;
@@ -31,14 +34,14 @@ void send_shutdown() {
 	kill(pids->pid_esc, SIGUSR1);
 }
 
-void read_data() {
+int read_data() {
 	shutdown_vector_t msg;
 	int i, j;
-
 	
-	for (i = 0; i < TAM_PIDS; ++i) {
-		if(msgrcv(fila_shutdown, &msg, sizeof(shutdown_vector_t), 0, 0) < 0) {
-			printf("Erro no recebimento da mensagem.\n");
+	for (i = 0; i < 16; ++i) {
+		if(msgrcv(fila_shutdown, &msg, sizeof(msg), 0, 0) < 0) {
+			printf("Erro %d no recebimento da mensagem.\n", errno);
+			exit(0);
 		}
 		printf("\t\tPrograma               PID     Tempo de Inicio            Tempo de Fim               Tempo de Submissao\n");
 		for (j = 0; j < msg.info.total; ++j)	{
@@ -48,14 +51,19 @@ void read_data() {
 	}
 
 
+	printf("Terminando readData\n");
+
+	return 0;
 }
 
 int main() {
 	init();
-	send_shutdown();
-	read_data();
-	/*msgctl(fila_shutdown, IPC_RMID, NULL);
-*/	
-	printf("Teste\n");
+	send_shutdown();/*
+	read_data();*/
+	
+	getchar();
+	printf("Antes de remover\n");
+	msgctl(fila_shutdown, IPC_RMID, NULL);
+	printf("Shutdown terminando\n");
 	exit(0);
 }
