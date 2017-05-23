@@ -80,7 +80,7 @@ void teste_gerente(){
 
 	instancia_filas();
 
-	escToNode = msgget(FILA_DO_ESCALONADOR_K, IPC_CREAT | 0666);
+	escToNode = msgget(FILA_0_K, IPC_CREAT | 0666);
 
 	nodesToEsc = msgget(FILA_PARA_ESCALONADOR_K, IPC_CREAT | 0666);
 

@@ -3,8 +3,8 @@
 #include <stdint.h>
 #include <errno.h>
 
-#define FILA_EXECUTA_POSTERGADO_K 0X335
 #define FILA_DO_ESCALONADOR_K 0x336
+#define FILA_0_K 0x80
 #define FILA_PARA_ESCALONADOR_K 0x337
 #define FILA_SOLICITACAO_K 0x666
 #define FILA_SHUTDOWN_K 0x667
