@@ -24,6 +24,7 @@ int main(int argc, char* argv[]) {
 
     } 
 
+    msg.mtype = 1;
 	msg.info.seg = atoi(argv[1]);
 	strcpy(msg.info.programa, argv[2]);
 
