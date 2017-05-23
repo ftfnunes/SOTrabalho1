@@ -6,7 +6,7 @@ extern int errno;
 int node_num = 0;
 int pid_prog = 0;
 int pid_gerente = 0;
-uint8_t *matriz_ocupacao;
+int old_total = -1;
 mensagem_exec_t msg;
 shutdown_vector_t estatisticas;
 
@@ -43,6 +43,8 @@ resultado_t executa_programa(char *programa){
 	char *nome_programa;
 	resultado_t rst;
 
+	old_total = estatisticas.info.total;
+
 	if((nome_programa = strrchr(programa, '/')) == NULL){
 		printf("Erro no parse do programa no node %d\n", node_num);
 		exit(1);
@@ -74,7 +76,7 @@ resultado_t executa_programa(char *programa){
 	strcpy(estatisticas.info.vetor[estatisticas.info.total].tempo_inicio, rst.info.inicio);
 	strcpy(estatisticas.info.vetor[estatisticas.info.total].tempo_fim, rst.info.fim);
 	strcpy(estatisticas.info.vetor[estatisticas.info.total].tempo_submissao, ctime(&(msg.info.tempo_submissao)));
-	estatisticas.info.vetor[estatisticas.info.total].tempo_submissao[strlen(estatisticas.info.vetor[estatisticas.info.total].tempo_submissao) - 1] = '\0';
+	estatisticas.info.vetor[estatisticas.info.total].tempo_submissao[strlen(estatisticas.info.vetor[estatisticas.info.total].tempo_submissao)-1] = '\0';
 	strcpy(estatisticas.info.vetor[estatisticas.info.total].programa, programa);
 	estatisticas.info.vetor[estatisticas.info.total].pid = pid_prog;
 
@@ -111,9 +113,10 @@ void notifica_escalonador(int fila_de_mensagem, resultado_t rst){
 
 void trata_shutdown(){
 	int fila_shutdown = -1;
-	if(matriz_ocupacao[node_num] == 1){
+	
+	if(old_total == estatisticas.info.total){
 		kill(pid_prog, SIGKILL);
-		printf("O programa %s nao completou sua execucao no node %d\n", msg.info.programa, node_num);
+		printf("O programa %s nao foi finalizado no node %d\n", msg.info.programa, node_num);
 	}
 	
 	if((fila_shutdown = msgget(FILA_SHUTDOWN_K, 0666)) < 0){
@@ -131,7 +134,6 @@ void trata_shutdown(){
 
 
 int main(int argc, char** argv){
-	int shmid = 0;
 	int fila_para_escalonador = -1;
 	int fila_direita = -1;
 	int fila_cima = -1;
@@ -150,58 +152,36 @@ int main(int argc, char** argv){
 	estatisticas.info.total = 0;
 	estatisticas.mtype = 1;
 
-
-	if((shmid = shmget(0x33, 16*sizeof(uint8_t), 0666)) < 0){
-		printf("Erro ao se obter segmento de memoria compartilhada no node %d\n", node_num);
-		exit(1);
-	}
-	
 	if((fila_para_escalonador = msgget(FILA_PARA_ESCALONADOR_K, 0666)) < 0){
 		printf("Erro ao se obter fila de menssagens no node %d\n", node_num);
 		exit(1);
 	}
 
-	if((matriz_ocupacao = (uint8_t *)shmat(shmid, 0, 0)) == NULL){
-		printf("Erro no attach no node %d\n", node_num);
+	/*As filas devem ser criadas antes da criacao dos processos (IPC_CREAT)*/
+
+	if((fila_recebimento = msgget(FILA_0_K+node_num, 0666)) < 0){
+		printf("Erro ao se obter a fila de recebimento no node %d\n", node_num);
 		exit(1);
 	}
 
-
-	/*As filas devem ser criadas antes da criacao dos processos (IPC_CREAT)*/
-	if(node_num < 4){
-	/*node zero recebe, do escalonador */
-		if(node_num == 0){
-			if((fila_recebimento = msgget(FILA_DO_ESCALONADOR_K, 0666)) < 0){
-				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
-				exit(1);
-			}
-		}			
-		else{
-			if((fila_recebimento = msgget((node_num-1)*10 + node_num, 0666)) < 0){
-				printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
-				exit(1);
-			}
-		}
-	}			
-	else{
-		if((fila_recebimento = msgget((node_num-4)*10 + node_num, 0666)) < 0){
-			printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
-			exit(1);
-		}
-	}
+	/*printf("No %d obteve fila de recebimento 0x%x\n", node_num, FILA_0_K+node_num);*/
 
 	if(node_num < 12){
-		if((fila_cima = msgget((node_num*10)+node_num+4, 0666)) < 0){
-			printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
+		if((fila_cima = msgget(FILA_0_K+node_num+4, 0666)) < 0){
+			printf("Erro ao se obter a fila de cima no node %d\n", node_num);
 			exit(1);
 		}
+
+		/*printf("No %d obteve fila de cima 0x%x\n", node_num, FILA_0_K+node_num+4);*/
 	}
 
 	if(node_num < 3){
-		if((fila_direita = msgget((node_num*10)+node_num+1, 0666)) < 0){
-			printf("Erro ao se obter a fila de mensagens no node %d\n", node_num);
+		if((fila_direita = msgget(FILA_0_K+node_num+1, 0666)) < 0){
+			printf("Erro ao se obter a fila da direita no node %d\n", node_num);
 			exit(1);
 		}
+
+		/*printf("No %d obteve fila da direita 0x%x\n", node_num, FILA_0_K+node_num+1);*/
 	}
 
 	/*printf("Todos os recursos setados! (%d)\n", node_num);
@@ -210,13 +190,9 @@ int main(int argc, char** argv){
 	while(TRUE){
 		msg = receber_mensagem(fila_recebimento);
 		if(msg.info.node_dest == node_num){
-			if(matriz_ocupacao[node_num] == 0){
-				matriz_ocupacao[node_num] = 1;
-				rst = executa_programa(msg.info.programa);
+			rst = executa_programa(msg.info.programa);
 
-				matriz_ocupacao[node_num] = 0;
-				notifica_escalonador(fila_para_escalonador, rst);
-			}			
+			notifica_escalonador(fila_para_escalonador, rst);
 		}
 		else{
 			envia_mensagem(msg, fila_cima, fila_direita);
