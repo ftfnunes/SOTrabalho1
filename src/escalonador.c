@@ -12,6 +12,7 @@
 #include <sys/shm.h>
 #include <sys/signal.h>
 #include <sys/sem.h>
+#include <errno.h>
 
 #include "utils.h"
 
@@ -31,14 +32,28 @@
 	Também é necessário definir a estrutura a ser enviada para os gerenciadores de execução
 */
 
+extern int errno;
 
 int filaSolicitacoes = -1; 
 int filaExecucao = -1;
-int shmid;
-uint8_t  *mtzGerentesExec; 
-int shm_pids, nodesToEsc, idsem;
+int nodesToEsc = -1;
+
+/* Foi decidido que o programa irá armazenar até 100 pids de filhos. */
+int pids_procs[100];
+int conta_procs = 0;
+int shm_pids, idsem;
 pids_t *pids;
 struct sembuf operacao[2];
+
+mensagem_sol_t msg_sol;
+mensagem_exec_t msg_exe;
+
+
+void trata_sigusr2(){
+	printf("O programa '%s' não será executado devido ao término do processo.\n", msg_sol.info.programa);
+	exit(0);
+}
+
 
 void p_sem(){
 	/* Operação que verifica se o semáforo é igual a 0.*/
@@ -78,56 +93,42 @@ int instancia_gerente_de_execucao(int num_do_gerente){
 	return pid;
 }
 
-void instancia_filas(){
-	int i;
+int instancia_filas(){
+	int i, id = -1;
 
-	for(i = 0; i<=11; i++){
-		if(msgget((i*10)+i+4, IPC_CREAT | 0666) < 0){
-			printf("Erro na criacao da fila %d\n", (i*10)+i+4);
+	for(i=15; i>=0; i--){
+		if((id = msgget(FILA_0_K+i, IPC_CREAT | 0666)) < 0){
+			printf("Erro na criacao da fila 0x%x\n", FILA_0_K+i);
 			exit(1);
 		}
-
-		if(i < 3){
-			if(msgget((i*10)+i+1, IPC_CREAT | 0666) < 0){
-				printf("Erro na criacao da fila %d\n", (i*10)+i+1);
-				exit(1);
-			}
-		}
 	}
+
+	return id;
 }
 
-void remove_recursos(){
+void remove_recursos() {
 	int i, id;
 
-	for(i = 0; i<=11; i++){
-		if((id = msgget((i*10)+i+4, 0666)) < 0){
-			printf("Erro na remocao da fila %d\n", (i*10)+i+4);
+	for(i = 0; i<16; i++){
+		if((id = msgget(FILA_0_K+i, 0666)) < 0){
+			printf("Erro na remocao da fila 0x%x\n", FILA_0_K+i);
 			exit(1);
 		}
-
-		if(msgctl(id, IPC_RMID, NULL) == 0)
-			printf("Fila %d removida\n", (i*10)+i+4);
-
-		if(i < 3){
-			if((id = msgget((i*10)+i+1, 0666)) < 0){
-				printf("Erro na remocao da fila %d\n", (i*10)+i+1);
-				exit(1);
-			}
-			if(msgctl(id, IPC_RMID, NULL) == 0)
-				printf("Fila %d removida\n", (i*10)+i+1);
+		else{
+			(msgctl(id, IPC_RMID, NULL) == 0) ? printf("Fila 0x%x removida\n", FILA_0_K+i) : printf("Erro, fila 0x%x nao pode ser removida\n", FILA_0_K+i);
 		}
 	}
 
-	if(msgctl(filaExecucao, IPC_RMID, NULL) == 0){
-		printf("Fila removida\n");
-	}
-	msgctl(filaSolicitacoes, IPC_RMID, NULL);
-	msgctl(nodesToEsc, IPC_RMID, NULL);
+	/* Envia sinais SIGUSR2 para os filhos do escalonador, indicando a eles que devem terminar imediatamente.*/
+	for (i = 0; i < conta_procs; ++i)
+		kill(pids_procs[i], SIGUSR2);
+	
 
-	shmctl(shmid, IPC_RMID, NULL);
-	shmctl(shm_pids, IPC_RMID, NULL);
+	(msgctl(filaSolicitacoes, IPC_RMID, NULL) == 0) ? printf("Fila de solicitacoes removida\n") : printf("Erro, fila de solicitacoes nao pode ser removida\n");
+	(msgctl(nodesToEsc, IPC_RMID, NULL) == 0) ? printf("Fila nodesToEsc removida\n") : printf("Erro, fila nodesToEsc nao pode ser removida %d\n", errno);
+	(shmctl(shm_pids, IPC_RMID, NULL) == 0) ? printf("Vetor de pids removido\n") : printf("Erro, vetor de pids nao pode ser removido\n");
 
-	semctl(idsem, 1, IPC_RMID, NULL);
+	(semctl(idsem, 1, IPC_RMID, NULL) == 0) ?  printf("Semaforo removido\n") : printf("Erro, semaforo nao pode ser removido\n");
 }
 
 
@@ -145,30 +146,18 @@ void finaliza_escalonador(){
 int main(){
 	int estado, pid = -1, job = 0, i = 0;
 
-	mensagem_sol_t msg_sol;
-	mensagem_exec_t msg_exe;
 	resultado_t res;
 
 	time_t tempo;
 
 	/* Instrução que irá fazer com que o escalonador saia quando o sinal de término chegar. */
 	signal(SIGUSR1, finaliza_escalonador);
-
-	/* Instancia as filas entre os gerentes de execução dentro do Torus. */
-	instancia_filas();
+	/* Instancia as filas entre os gerentes de execução dentro do Torus e retorna o id da fila para o no 0 */
+	filaExecucao = instancia_filas();
+	
+	printf("Todas as filas do Torus criadas com sucesso.\n");
 
 	/* Instancia uma área de memória compartilhada que abrigará os pids de todos os processos dos gerentes de execução. */
-	shm_pids = shmget(MEM_PIDS, sizeof(pids_t), IPC_CREAT | 0666);
-	if (shm_pids < 0) {
-		printf("Erro na alocacao da memoria compartilhada\n");
-		exit(1);
-	}
-	/* Atribuição à variável o ponteiro para a memória compartilhada. */
-	pids = (pids_t*) shmat(shm_pids, 0, 0);
-	if (pids < 0) {
-		printf("Erro na associacao da memoria compartilhada\n");
-		exit(1);
-	}
 
 	/* Criação da fila de mensagens que recebe as solicitações de execução vindas dos processos de solicitação de execução. */
 	if((filaSolicitacoes = msgget(FILA_SOLICITACAO_K, IPC_CREAT | 0666)) < 0){
@@ -177,10 +166,6 @@ int main(){
 	}
 
 	/* Criação da fila de mensagens para envio das mensagens co)m os programas a serem executados para os gerentes de execução. */
-	if((filaExecucao = msgget(FILA_DO_ESCALONADOR_K, IPC_CREAT | 0666)) < 0){
-		printf("Erro na criação da fila.\n");
-		exit(1); 
-	}
 
 	if((nodesToEsc = msgget(FILA_PARA_ESCALONADOR_K, IPC_CREAT | 0666)) < 0) {
 		printf("Erro na criação da fila.\n");
@@ -188,20 +173,19 @@ int main(){
 	}
 
 
-	/* Criação de um vetor de inteiros em memória compartilhada para verificar se os gerentes de execução estão livres. */
-	if((shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666)) < 0){
-		printf("Erro na criação de memória compartilhada.\n");
+	printf("Filas de solicitacao e de resultados criadas com sucesso!\n");
+
+	shm_pids = shmget(MEM_PIDS, sizeof(pids_t), IPC_CREAT | 0666);
+	if (shm_pids < 0) {
+		printf("Erro na alocacao da memoria compartilhada\n");
 		exit(1);
 	}
 
-	/* Atribuição à variável "mtzGerentesExec" a área de memória compartilhada que abriga o vetor com o status dos gerentes de execução, se estão livre ou nao. */
-	if((mtzGerentesExec = (uint8_t *) shmat(shmid, 0, 0)) < 0){
-		printf("Erro na atribuição de memória compartilhada.\n");
+	/* Atribuição à variável o ponteiro para a memória compartilhada. */
+	pids = (pids_t*) shmat(shm_pids, 0, 0);
+	if (pids < 0) {
+		printf("Erro na associacao da memoria compartilhada\n");
 		exit(1);
-	}
-
-	for(i = 0; i < 16; i++){
-		mtzGerentesExec[i] = 0;
 	}
 
 	/* Criação do semáforo. */
@@ -210,18 +194,24 @@ int main(){
 		exit(1);
 	}
 
-	/* Atribui*/
+	printf("Areas de memoria compartilhada (de pids e matriz de ocupacao) e semaforo criados com sucesso!\n");
+
+
+
+	printf("Pids dos gerentes: ");
 	for(i = 0; i < 16; ++i){
 		pids->pids_v[i] = instancia_gerente_de_execucao(i);
+		printf("%d\t", pids->pids_v[i]);
 	}
 	pids->pid_esc = getpid();
+
+	printf("\nGerentes de execucao instanciados com sucesso!\n");
 
 	while(1){
 		if(msgrcv(filaSolicitacoes, &msg_sol, sizeof(msg_sol), 0, 0) < 0){
 			printf("Erro na recepcao de solicitacao no escalonador\n");
 			exit(1);
 		}
-		
 		++job;
 
 		/* Atribui à variável 'tempo' o tempo em que a mensagem foi recebida. */
@@ -230,22 +220,13 @@ int main(){
 		pid = fork();
 
 		if(pid == 0){
+
+			signal(SIGUSR2, trata_sigusr2);
+
 			/* O processo irá realizar um sleep até que que delay desejado seja simulado. */
 			sleep(msg_sol.info.seg);			/* Loop verifica se todos os gerenciadores de processo estão livres.*/
 
 			p_sem();
-
-			/*while(!sai){
-				conta_livres = 0;
-				for(i = 0; i < 16; ++i){
-					if(mtzGerentesExec[i] == 0 )
-						++conta_livres;
-				}
-				if(conta_livres == 16)
-					sai = 1;
-			}*/
-
-
 
 			for(i = 15; i >= 0; --i) {
 				/* Atribui 1 ao tipo, pois esse tipo não é relevante nos processos gerenciadores de execução (não são verificados os tipos das mensagens) */
@@ -256,17 +237,17 @@ int main(){
 
 				if(msgsnd(filaExecucao, &(msg_exe), sizeof(msg_exe), 0) < 0){
 					printf("Erro no envio da mensagem do escalonador para o node %d\n", i);
+					v_sem();
 					exit(1);
 				}
 			}
 
-			
 
-			/*Não estamos verificando se a fila de mensagens está cheia. */
 
 			for(i = 0; i < 16; ++i){
 				if(msgrcv(nodesToEsc, &res, sizeof(res), 0, 0) < 0){
-					printf("Erro na recepcao de resposta para o escalonador\n");\
+					printf("Erro na recepcao de resposta para o escalonador com erro %d\n", errno);
+					v_sem();
 					exit(1);
 				}
 				printf("job = %d, arquivo = %s, delay = %d, makespan = %ld\n", job, msg_sol.info.programa, msg_sol.info.seg, res.info.turnaround);
@@ -276,6 +257,9 @@ int main(){
 
 			exit(0);
 		}
+
+		pids_procs[conta_procs] = pid;
+		++conta_procs;
 
 		/* Registrando o wait com o PID do filho antes de continuar o loop. */
 		waitpid(pid, &estado, WNOHANG);
