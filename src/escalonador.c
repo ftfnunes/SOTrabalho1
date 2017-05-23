@@ -199,7 +199,7 @@ int main(){
 
 
 	printf("Pids dos gerentes: ");
-	for(i = 0; i < 16; ++i){
+	for(i = 0; i < 16; i++){
 		pids->pids_v[i] = instancia_gerente_de_execucao(i);
 		printf("%d\t", pids->pids_v[i]);
 	}
@@ -208,10 +208,12 @@ int main(){
 	printf("\nGerentes de execucao instanciados com sucesso!\n");
 
 	while(1){
+
 		if(msgrcv(filaSolicitacoes, &msg_sol, sizeof(msg_sol), 0, 0) < 0){
 			printf("Erro na recepcao de solicitacao no escalonador\n");
 			exit(1);
 		}
+
 		++job;
 
 		/* Atribui à variável 'tempo' o tempo em que a mensagem foi recebida. */
@@ -261,8 +263,12 @@ int main(){
 		pids_procs[conta_procs] = pid;
 		++conta_procs;
 
+		
 		/* Registrando o wait com o PID do filho antes de continuar o loop. */
-		waitpid(pid, &estado, WNOHANG);
+		for(i = 0; i < conta_procs; i++){
+			waitpid(pids_procs[i], &estado, WNOHANG);
+		}
+		
 	}
 
 	return 0;
