@@ -8,12 +8,6 @@ ODIR=obj
 
 BDIR=bin
 
-_DEPS = escalonador.h gerente_de_execucao.h shutdown.h executa_postergado.h
-DEPS = $(patsubst %,$(IDIR)/%,$(_DEPS))
-
-_OBJ = escalonador.o gerente_de_execucao.o shutdown.o executa_postergado.o
-OBJ = $(patsubst %,$(ODIR)/%,$(_OBJ))
-
 escalonador: $(SRC_DIR)/escalonador.c $(IDIR)/escalonador.h $(IDIR)/utils.h 
 	$(CC) -o $(BDIR)/$@ $(SRC_DIR)/escalonador.c $(CFLAGS)
 
@@ -27,7 +21,7 @@ shutdown: $(SRC_DIR)/shutdown.c $(IDIR)/shutdown.h $(IDIR)/utils.h
 	$(CC) -o $(BDIR)/$@ $(SRC_DIR)/shutdown.c $(CFLAGS)
 
 dummy: dummy.c $(IDIR)/utils.h
-	$(CC) -o $@ dummy.c $(CFLAGS)
+	$(CC) -o $(BDIR)/$@ dummy.c $(CFLAGS)
 
 all: escalonador gerente_de_execucao executa_postergado shutdown dummy
 
