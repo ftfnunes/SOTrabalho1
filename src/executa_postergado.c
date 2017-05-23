@@ -1,64 +1,39 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
+#include "executa_postergado.h"
+#include "utils.h"
 
-#define MAX_NAME_SZ 256
-#define N 20
-#define CMD_SHELL "executa_postergado"
+int main(int argc, char* argv[]) {
 
-void execute(char *, char *);
+	mensagem_sol_t msg;
+	int msqid;
+ 
+	/* validação dos parâmetros da solicitação de execução    */
+    if (argc != 3) {
 
-int main() {
-
-	char line[50], comand[50];
-	char * cmd;
-
-	while(1) {
-
-		printf("$ ");
-		fgets(line, MAX_NAME_SZ, stdin);
-		strcpy(comand, line);
-
-		setbuf(stdin, NULL);
-		cmd = strtok(line," \n");
-
-		execute(cmd, comand);
-	}
-
-	return 0;
-}
-
-void execute(char * cmd, char * comand) {
-
-	int argc = 0;
-	char * argv[N];
-
-	while(cmd != NULL) {
-		argv[argc] = cmd;												
-		cmd = strtok(NULL, " \n");							
-		argc++;							
-	}
-
-	if(!strcmp(argv[0], "quit")) {
-		exit(1);
-	}
-
-	/* validação dos parâmetros da solicitação de execução */
-    if (argc < 3 || argc > 3 || strcmp(argv[0], CMD_SHELL)) {
-    	printf("---------------------------------------------------------\n");
-    	printf("\nO primeiro parametro deveria ser 'executa_postergado'\n");
-        printf("seguido de um inteiro representando o delay de execucao.\n");
-        printf("O parametro seguinte deveria ser o nome do arquivo \n");
+        printf("\nO primeiro parametro deveria ser fornecido como\n");
+        printf("inteiro representando o delay de execucao.\n");
+        printf("O parametro seguinte deve ser o nome do arquivo \n");
         printf("executavel a ser executado de maneira postergada.\n");
         printf("Exemplo:\n");
-        printf("  $ executa_postergado 5 hello world\n");
-        printf("Ou para sair:\n");
-        printf("  $ quit\n\n");
-        printf("---------------------------------------------------------\n");
-    	
-    	return;
-    }
+        printf("\t> executa_postergado 5 hello world\n\n");
 
+        exit(1);
+
+    } else if(atoi(argv[1]) < 0 || atoi(argv[2]) < 0) { 	
+    	printf("\nParametro invalido.\n");
+    	exit(1);
+
+    } 
+
+	msg.info.seg = atoi(argv[1]);
+	strcpy(msg.info.programa, argv[2]);
+
+	if((msqid = msgget(FILA_SOLICITACAO_K, IPC_CREAT | 0666)) < 0) {
+		printf("Erro na criação da fila.\n");
+	}
+
+	msgsnd(msqid ,&msg, sizeof(msg), 0);
+
+  	return 0;
 }
+
 
