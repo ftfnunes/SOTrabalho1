@@ -12,6 +12,7 @@
 #include <sys/shm.h>
 #include <sys/signal.h>
 #include <sys/sem.h>
+#include <errno.h>
 
 #include "utils.h"
 
@@ -31,14 +32,28 @@
 	Também é necessário definir a estrutura a ser enviada para os gerenciadores de execução
 */
 
+extern int errno;
 
 int filaSolicitacoes = -1; 
 int filaExecucao = -1;
-int shmid;
-uint8_t  *mtzGerentesExec; 
-int shm_pids, nodesToEsc, idsem;
+int nodesToEsc = -1;
+
+/* Foi decidido que o programa irá armazenar até 100 pids de filhos. */
+int pids_procs[100];
+int conta_procs = 0;
+int shm_pids, idsem;
 pids_t *pids;
 struct sembuf operacao[2];
+
+mensagem_sol_t msg_sol;
+mensagem_exec_t msg_exe;
+
+
+void trata_sigusr2(){
+	printf("O programa '%s' não será executado devido ao término do processo.\n", msg_sol.info.programa);
+	exit(0);
+}
+
 
 void p_sem(){
 	/* Operação que verifica se o semáforo é igual a 0.*/
@@ -104,8 +119,13 @@ void remove_recursos() {
 		}
 	}
 
+	/* Envia sinais SIGUSR2 para os filhos do escalonador, indicando a eles que devem terminar imediatamente.*/
+	for (i = 0; i < conta_procs; ++i)
+		kill(pids_procs[i], SIGUSR2);
+	
+
 	(msgctl(filaSolicitacoes, IPC_RMID, NULL) == 0) ? printf("Fila de solicitacoes removida\n") : printf("Erro, fila de solicitacoes nao pode ser removida\n");
-	(msgctl(nodesToEsc, IPC_RMID, NULL) == 0) ? printf("Fila nodesToEsc removida\n") : printf("Erro, fila nodesToEsc nao pode ser removida\n");
+	(msgctl(nodesToEsc, IPC_RMID, NULL) == 0) ? printf("Fila nodesToEsc removida\n") : printf("Erro, fila nodesToEsc nao pode ser removida %d\n", errno);
 	(shmctl(shm_pids, IPC_RMID, NULL) == 0) ? printf("Vetor de pids removido\n") : printf("Erro, vetor de pids nao pode ser removido\n");
 
 	(semctl(idsem, 1, IPC_RMID, NULL) == 0) ?  printf("Semaforo removido\n") : printf("Erro, semaforo nao pode ser removido\n");
@@ -126,8 +146,6 @@ void finaliza_escalonador(){
 int main(){
 	int estado, pid = -1, job = 0, i = 0;
 
-	mensagem_sol_t msg_sol;
-	mensagem_exec_t msg_exe;
 	resultado_t res;
 
 	time_t tempo;
@@ -162,6 +180,7 @@ int main(){
 		printf("Erro na alocacao da memoria compartilhada\n");
 		exit(1);
 	}
+
 	/* Atribuição à variável o ponteiro para a memória compartilhada. */
 	pids = (pids_t*) shmat(shm_pids, 0, 0);
 	if (pids < 0) {
@@ -178,6 +197,7 @@ int main(){
 	printf("Areas de memoria compartilhada (de pids e matriz de ocupacao) e semaforo criados com sucesso!\n");
 
 
+
 	printf("Pids dos gerentes: ");
 	for(i = 0; i < 16; ++i){
 		pids->pids_v[i] = instancia_gerente_de_execucao(i);
@@ -192,7 +212,6 @@ int main(){
 			printf("Erro na recepcao de solicitacao no escalonador\n");
 			exit(1);
 		}
-		
 		++job;
 
 		/* Atribui à variável 'tempo' o tempo em que a mensagem foi recebida. */
@@ -201,6 +220,9 @@ int main(){
 		pid = fork();
 
 		if(pid == 0){
+
+			signal(SIGUSR2, trata_sigusr2);
+
 			/* O processo irá realizar um sleep até que que delay desejado seja simulado. */
 			sleep(msg_sol.info.seg);			/* Loop verifica se todos os gerenciadores de processo estão livres.*/
 
@@ -215,13 +237,17 @@ int main(){
 
 				if(msgsnd(filaExecucao, &(msg_exe), sizeof(msg_exe), 0) < 0){
 					printf("Erro no envio da mensagem do escalonador para o node %d\n", i);
+					v_sem();
 					exit(1);
 				}
 			}
 
+
+
 			for(i = 0; i < 16; ++i){
 				if(msgrcv(nodesToEsc, &res, sizeof(res), 0, 0) < 0){
-					printf("Erro na recepcao de resposta para o escalonador\n");\
+					printf("Erro na recepcao de resposta para o escalonador com erro %d\n", errno);
+					v_sem();
 					exit(1);
 				}
 				printf("job = %d, arquivo = %s, delay = %d, makespan = %ld\n", job, msg_sol.info.programa, msg_sol.info.seg, res.info.turnaround);
@@ -231,6 +257,9 @@ int main(){
 
 			exit(0);
 		}
+
+		pids_procs[conta_procs] = pid;
+		++conta_procs;
 
 		/* Registrando o wait com o PID do filho antes de continuar o loop. */
 		waitpid(pid, &estado, WNOHANG);
