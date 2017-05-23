@@ -56,7 +56,7 @@ typedef struct {
 	long mtype;
 	struct vector_info{
 		shutdown_data_t vetor[TAM_SHUTDOWN_V];
-		uint8_t total;
+		int total;
 	} info;
 } shutdown_vector_t;
 

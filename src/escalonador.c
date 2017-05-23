@@ -143,8 +143,6 @@ void finaliza_escalonador(){
 	for(i = 0; i < conta_procs; i++){
 		waitpid(pids_procs[i], &estado, 0);
 	}
-
-	printf("Terminando Escalonador\n");
 	exit(0);
 }
 

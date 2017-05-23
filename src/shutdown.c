@@ -7,6 +7,7 @@ extern int errno;
 int shm_pids = -1;
 pids_t *pids;
 int fila_shutdown = -1;
+shutdown_vector_t msg;
 
 void init() {
 	shm_pids = shmget(MEM_PIDS, sizeof(pids_t), 0x1B6);
@@ -35,7 +36,6 @@ void send_shutdown() {
 }
 
 int read_data() {
-	shutdown_vector_t msg;
 	int i, j;
 	
 	for (i = 0; i < 16; ++i) {
@@ -43,27 +43,23 @@ int read_data() {
 			printf("Erro %d no recebimento da mensagem.\n", errno);
 			exit(0);
 		}
-		printf("\t\tPrograma               PID     Tempo de Inicio            Tempo de Fim               Tempo de Submissao\n");
+
+		printf("\n\n\t\tPrograma               PID     Tempo de Inicio            Tempo de Fim               Tempo de Submissao\n");
 		for (j = 0; j < msg.info.total; ++j)	{
 			printf("\t\t%-20s   %-5d   %-16s   %-16s   %-18s\n", msg.info.vetor[j].programa,
 				msg.info.vetor[j].pid, msg.info.vetor[j].tempo_inicio, msg.info.vetor[j].tempo_fim, msg.info.vetor[j].tempo_submissao);
 		}
+		printf("\n\n");
+
+
 	}
-
-
-	printf("Terminando readData\n");
-
 	return 0;
 }
 
 int main() {
 	init();
-	send_shutdown();/*
-	read_data();*/
-	
-	getchar();
-	printf("Antes de remover\n");
+	send_shutdown();
+	read_data();
 	msgctl(fila_shutdown, IPC_RMID, NULL);
-	printf("Shutdown terminando\n");
 	exit(0);
 }
