@@ -139,11 +139,12 @@ Encerramento:
 
 	Processo responsável por terminar todos os processos. Constitui-se de quatro partes:
 
-		* inicialização: cria um novo segmento de memória compartilhada, acopla o segmento de memória compartilhada identificado ao segmento de dados do processo que a chamou e atribui o pid dos processos a serem encerrados
+		* inicialização: cria um novo segmento de memória compartilhada, acopla o segmento de memória compartilhada
+		 identificado ao segmento de dados do processo que a chamou e atribui o pid dos processos a serem encerrados
 		e obtem a fila de mensagens do shutdown vindos do escalonador.
 		* envio de sinais para os processos, indicando a eles que devem terminar imediatamente
 		* impressão das estatística de cada processo que foi efetivamente executado
-		* e por fim,  destrói a fila de mensagens todas as outras operações em curso sobre a fila em questão
+		* e por fim, destrói a fila de mensagens todas as outras operações em curso sobre a fila em questão
 		irão falhar e os processos bloqueados em espera de leitura ou escrita serão liberados
 
 
