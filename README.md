@@ -15,6 +15,24 @@
 
 Os executáveis serão criados na pasta bin, que deve ser criada caso nao exista.
 
+##Processo de solicitação de execução
+
+O processo em questão é executado através do executável ./executa_postergado presente na pasta bin, 
+e é obrigatório que venha seguido dos parâmetros <seg> que representam o delay de execução e <arq_executavel>
+que representa o próprio arquivo a ser executado de maneira postergada. Os parâmetros são validados da 
+seguinte maneira:
+
+	1- se o contador de argumentos passados via shell for diferente de 3 (já citados acima);
+	2- se o segundo argumento passado, <seg>, é menor que zero o parâmetro é inválido, já que o representa
+	o delay de execução em relação à hora corrente;
+	3- verifica se o arquivo executável, terceiro argumento, existe. 
+
+Se alguma dessas validações não for respeitada, uma mensagem informativa é mostrada ao usuário e sai do
+programa. Caso contrário, esses valores recebidos via shell são atribuidos a cada campo correspondente em uma estrutura
+de dados compartilhada 'mensagem_sol_t'. O processo por fim cria a fila de mensagens com uma chave indicada previamente 
+por uma constante numérica representando a fila de mensagens, ou recupera caso já exista, e insere a mensagem na fila que
+será acessada pelo escalonador.
+
 ##Processo Gerente de Execução
 
 Esse processo representará um nó na estrutura de Torus. Cada nó é representado por um número inteiro, e só poderão se comunicar
