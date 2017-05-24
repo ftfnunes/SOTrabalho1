@@ -23,8 +23,8 @@ que representa o próprio arquivo a ser executado de maneira postergada. Os par�
 seguinte maneira:
 
 	1- se o contador de argumentos passados via shell for diferente de 3 (já citados acima);
-	2- se o segundo argumento passado, <seg>, é menor que zero o parâmetro é inválido, já que o representa
-	o delay de execução em relação à hora corrente;
+	2- se o segundo argumento passado, <seg>, é menor que zero o parâmetro é inválido, já que o 
+	representa o delay de execução em relação à hora corrente;
 	3- verifica se o arquivo executável, terceiro argumento, existe. 
 
 Se alguma dessas validações não for respeitada, uma mensagem informativa é mostrada ao usuário e sai do
