@@ -67,10 +67,8 @@ void remove_filas(){
 }
 
 void teste_gerente(){
-	int escToNode, nodesToEsc, shmid;
-	int pid, i;
-	int estado;
-	uint8_t *matriz;
+	int escToNode, nodesToEsc;
+	int i;
 	int pids[16];
 	mensagem_exec_t msg;
 	resultado_t rst;
@@ -85,9 +83,6 @@ void teste_gerente(){
 	nodesToEsc = msgget(FILA_PARA_ESCALONADOR_K, IPC_CREAT | 0666);
 
 	fila_sh = msgget(0x120700, IPC_CREAT | 0666);
-
-	shmid = shmget(0x33, 16*sizeof(uint8_t), IPC_CREAT | 0666);
-	matriz = shmat(shmid, 0, 0);
 
 	for(i=0; i<16; i++){
 		pids[i] = instancia_gerente_de_execucao(i);
