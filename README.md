@@ -56,7 +56,7 @@ execução enviando uma mensagem de erro, as estatísticas referentes a todos os
 
 	Todo o processo escalonador se baseia em um loop infinito, fazendo com que seja finalizado somente com a chegada do sinal SIGUSR1. Dentro desse loop, o primeiro comando executado é uma recepção de mensagem blocante, ou seja, o escalonador esperará algum processo "executa_postergado" enviar-lhe alguma mensagem com o programa a ser executado. Assim que recebe tal mensagem, é definido o número de job desse programa, o horário em que a mensagem chegou e em seguida é realizado um fork. Em seguida, é definido um trecho de código que será somente executado pelos filhos (há um teste verificando se o pid do fork é zero ou não) que será explicado adiante*. Após tal trecho, há código que somente a instância mais superior ou a instância pai do escalonador irá executar, armazenando os pids de todos os filhos criados e também sua quantidade, executando em loop a função "waitpid" não blocante para remover os possíveis processos zumbis. A partir daí, o loop continua voltando à recepção de mensagem blocante dos processos "executa_postergado".
 
-	 *Trecho de código dos processos filhos do escalonador (gerados pelo fork):
+	Trecho de código dos processos filhos do escalonador (gerados pelo fork):
 		O fork é realizado nesse ponto para que o o processo filho não mude os dados presentes no buffer de mensagem de solicitação de execução, ou seja, preserve a mensagem recebida por seu pai, realizando todo o restante de seu código baseado nesses dados. Isso faz com que o processo pai não precise fazer um controle mais complexo das mensagens recebidas e fique livre para receber mais requisições.
 
 		A primeira instrução dos filhos é registrar que ao receber o sinal SIGUSR2, eles terão seu fluxo desviado para uma rotina de encerramento.
@@ -64,7 +64,7 @@ execução enviando uma mensagem de erro, as estatísticas referentes a todos os
 
 		Nesse ponto, de modo a evitar concorrência no envio de mensagens de para os gerentes de execução e garantir que um programa só será executado quando todos os gerente de execução estejam livres, é realizada a operação "P" do semáforo criado. Assim, o processo que entrar na área protegida pelo semáforo irá cuidar envio das mensagens com o programa a ser executado para o gerente de execução 0 que irá lidar com o reenvio para todos os outros gerentes. Em seguida o filho entrará em loop, e realizará recepções de mensagem blocantes dos gerenciadores de execução, sendo que tais mensagens marcam o fim da execução do programa designado em cada gerente, imprimindo após a recepção os dados do resultado da execução (como número do job e makespan). O loop só se encerrará quando todos os 16 gerentes de execução enviarem a mensagem de solicitação, o que garante que sempre todos eles irão executar o mesmo programa. Após o loop, é executada a operação "V" sobre o  semáforo, liberando a execução de outros programas, e o processo se encerra.
 
-	### Encerramento:
+	Encerramento:
 		Ao receber o sinal SIGUSR1, o escalonador irá remover os recursos utilizados por ele e por outros processos. Todos os gerentes de execução receberão um sinal para finalizarem sua execução. A função de encerramento do escalonador irá remover:
 			- Todas as filas de comunicação entre gerentes de execução e a que fica entre o gerente de execução 0 e o escalonador;
 			- A fila que o escalonador recebe solicitações de execução;
