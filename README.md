@@ -19,10 +19,13 @@ Processo Gerente de Execução
 
 	Esse processo representará um nó na estrutura de Torus. Cada nó é representado por um número inteiro, e só poderão se comunicar
 com processos vizinhos, condorme definido nessa estruturação.
+
 	O processo é criado a partir do escalonador utilizando a função instancia gerente de execução
 presente no módulo do escalonador.
+
 	No ato da criação de um processo gerente de execução, é necessário passar um inteiro que indicará ao processo que nó este estará
 representando dentro do Torus.
+
 	Para a comunicação entre os processos dentro do Torus, são utilizadas filas de mensagem, de forma que a cada 2 processos que 
 podem se comunicar é criada uma fila de mensagens nova (a criação dessas filas é realizada pelo escalonador). Como nem todos os caminhos 
 serão utilizados, só foram criadas filas entre dois processos que se comunicarão de acordo com o algoritmo de roteamento. Cada nó irá 
