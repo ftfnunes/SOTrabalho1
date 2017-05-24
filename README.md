@@ -23,6 +23,15 @@ Leticia Ribeiro Miranda								12/0125170
 
 Os executáveis serão criados na pasta bin, que deve ser criada caso nao exista.
 
+
+#Execucao
+
+	Para iniciar o processo de solicitação, utiliza-se o seguinte padrão:
+
+	>./executa_postergado 5 ./teste
+
+	ATENÇÃO! É necessário o ./ no nome do arquivo, mesmo que esse arquivo esteja na mesma pasta.
+
 ##Processo de solicitação de execução
 
 O processo em questão é executado através do executável ./executa_postergado presente na pasta bin, 
