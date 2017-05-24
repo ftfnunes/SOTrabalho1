@@ -27,16 +27,16 @@ representando dentro do Torus.
 é criada uma fila de mensagens nova (a criação dessas filas é realizada pelo escalonador). Como nem todos os caminhos serão utilizados, só foram criadas filas entre dois processos que se comunicarão de acordo com o algoritmo de roteamento. Cada nó irá obter as filas de mensagem que serão efetivamente utilizadas durante a sua execução. As filas tem as suas chaves nomeadas de 0x80 a 0x8f, de modo que o digito em menos significativo dessa chava especifica o nó ao qual essa fila de mensagem se destina. Dessa forma, são criadas 16 filas de mensagem cada uma destinada a um nó. A fila de chave 0x80 será utilizada pelo escalonador para se comunicar com nó 0.
 	O algoritmo de roteamento é simplificado, e as rotas utilizadas são mostradas no arquivo Roteamento.jpg enviado no trabalho.
 
-		1. Se o nó de destino é o nó atual, para.
-		1. Se o nó de destino não está na mesma coluna que o nó atual, envia a mensagem para o nó a direita.
-		1. Caso contrário envia para o nó acima.
+		* Se o nó de destino é o nó atual, para.
+		* Se o nó de destino não está na mesma coluna que o nó atual, envia a mensagem para o nó a direita.
+		* Caso contrário envia para o nó acima.
 
 	Desse modo, fica claro que somente as filas acima e a direita (nos nós de 0 a 2) precisam ser obtidas por cada nó.
 	
 	Cada gerente de execução executa as seguintes funções
 
-		*Rotear mensagens, caso ela não seja direcionada para o nó corrente.
-		*Executar o programa contido na mensagem, caso esta seja direcionada para o nó corrente.
+		* Rotear mensagens, caso ela não seja direcionada para o nó corrente.
+		* Executar o programa contido na mensagem, caso esta seja direcionada para o nó corrente.
 
 	A implementação utilizada faz com que, assim que o nó receber uma mensagem destinada a ele, o programa contido na mensagem é executado e a próxima 
 mensagem só será lida quando o programa terminar sua execução.
