@@ -1,6 +1,6 @@
 # SOTrabalho1
 
-##Compilação
+#Compilação
 
 	para compilar todos os programas : make all
 
@@ -15,7 +15,7 @@
 
 Os executáveis serão criados na pasta bin, que deve ser criada caso nao exista.
 
-##Processo Gerente de Execução
+Processo Gerente de Execução
 
 	Esse processo representará um nó na estrutura de Torus. Cada nó é representado por um número inteiro, e só poderão se comunicar
 com processos vizinhos, condorme definido nessa estruturação.
@@ -23,8 +23,13 @@ com processos vizinhos, condorme definido nessa estruturação.
 presente no módulo do escalonador.
 	No ato da criação de um processo gerente de execução, é necessário passar um inteiro que indicará ao processo que nó este estará
 representando dentro do Torus.
-	Para a comunicação entre os processos dentro do Torus, são utilizadas filas de mensagem, de forma que a cada 2 processos que podem se comunicar 
-é criada uma fila de mensagens nova (a criação dessas filas é realizada pelo escalonador). Como nem todos os caminhos serão utilizados, só foram criadas filas entre dois processos que se comunicarão de acordo com o algoritmo de roteamento. Cada nó irá obter as filas de mensagem que serão efetivamente utilizadas durante a sua execução. As filas tem as suas chaves nomeadas de 0x80 a 0x8f, de modo que o digito em menos significativo dessa chava especifica o nó ao qual essa fila de mensagem se destina. Dessa forma, são criadas 16 filas de mensagem cada uma destinada a um nó. A fila de chave 0x80 será utilizada pelo escalonador para se comunicar com nó 0.
+	Para a comunicação entre os processos dentro do Torus, são utilizadas filas de mensagem, de forma que a cada 2 processos que 
+podem se comunicar é criada uma fila de mensagens nova (a criação dessas filas é realizada pelo escalonador). Como nem todos os caminhos 
+serão utilizados, só foram criadas filas entre dois processos que se comunicarão de acordo com o algoritmo de roteamento. Cada nó irá 
+obter as filas de mensagem que serão efetivamente utilizadas durante a sua execução. As filas tem as suas chaves nomeadas de 0x80 a 
+0x8f, de modo que o digito em menos significativo dessa chava especifica o nó ao qual essa fila de mensagem se destina. Dessa forma, são 
+criadas 16 filas de mensagem cada uma destinada a um nó. A fila de chave 0x80 será utilizada pelo escalonador para se comunicar com nó 
+0.
 	O algoritmo de roteamento é simplificado, e as rotas utilizadas são mostradas no arquivo Roteamento.jpg enviado no trabalho.
 
 		* Se o nó de destino é o nó atual, para.
