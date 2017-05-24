@@ -1,5 +1,13 @@
 # SOTrabalho1
 
+#Alunos
+
+Fernando Teixeira de Freitas da Costa Nunes			14/0039678
+Fabio Costa Farias Marques							14/0039082
+Bruno Jorge Siqueira Rodrigues						14/0017658
+Victoria Goulart Rezende							12/0137691
+Leticia Ribeiro Miranda								12/0125170
+
 #Compilação
 
 	para compilar todos os programas : make all
