@@ -21,7 +21,10 @@ int main(int argc, char* argv[]) {
     } else if(atoi(argv[1]) < 0 || atoi(argv[2]) < 0) { 	
     	printf("\nParametro invalido.\n");
     	exit(1);
-    } 
+    } else if(fopen(argv[2], "r") == NULL) {
+    	printf("\nArquivo executavel nao encontrado.\n");
+    	exit(1);
+    }
 
     /* atribuição aos campos da estrutura da mensagem */
     msg.mtype = 1;
