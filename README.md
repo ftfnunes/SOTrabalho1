@@ -15,7 +15,7 @@
 
 Os executáveis serão criados na pasta bin, que deve ser criada caso nao exista.
 
-Processo Gerente de Execução
+##Processo Gerente de Execução
 
 Esse processo representará um nó na estrutura de Torus. Cada nó é representado por um número inteiro, e só poderão se comunicar
 com processos vizinhos, condorme definido nessa estruturação.
@@ -47,14 +47,16 @@ Cada gerente de execução executa as seguintes funções
 		* Rotear mensagens, caso ela não seja direcionada para o nó corrente.
 		* Executar o programa contido na mensagem, caso esta seja direcionada para o nó corrente.
 
-A implementação utilizada faz com que, assim que o nó receber uma mensagem destinada a ele, o programa contido na mensagem é executado e a próxima 
-mensagem só será lida quando o programa terminar sua execução.
+A implementação utilizada faz com que, assim que o nó receber uma mensagem destinada a ele, o programa contido na mensagem é executado e 
+a próxima mensagem só será lida quando o programa terminar sua execução.
 
-A execução do programa se dá a partir da criação de um processo filho, que será responsável por efetivamente executar o programa. Ao termino desse
-processo filho, o gerente de execução será desbloqueado e as estatisticas referentes a execução desse programa serão salvas, enviando as informações referentes a essa execução para o escalonador. 
+A execução do programa se dá a partir da criação de um processo filho, que será responsável por efetivamente executar o programa. Ao 
+termino desse processo filho, o gerente de execução será desbloqueado e as estatisticas referentes a execução desse programa serão 
+salvas, enviando as informações referentes a essa execução para o escalonador. 
 
-O processo será terminado quando receber um signal SIGUSER1. Quando esse sinal for recebido, o programa terminará qualquer programa que esteja em
-execução enviando uma mensagem de erro, as estatísticas referentes a todos os programas executados durante o tempo de vida do gerente de execução serão enviadas para uma fila de mensagens utilizada pelo processo shutdwown.
+O processo será terminado quando receber um signal SIGUSER1. Quando esse sinal for recebido, o programa terminará qualquer programa que 
+esteja em execução enviando uma mensagem de erro, as estatísticas referentes a todos os programas executados durante o tempo de vida do 
+gerente de execução serão enviadas para uma fila de mensagens utilizada pelo processo shutdwown.
 
 ##Escalonador:
 
